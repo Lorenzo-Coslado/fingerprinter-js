@@ -1,6 +1,6 @@
 {
   "name": "@lorenzo-coslado/fingerprinter-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A modern JavaScript library for generating unique and reliable browser fingerprints with built-in bot detection",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
