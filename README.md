@@ -2,6 +2,8 @@
 
 A modern JavaScript library for generating unique and reliable browser fingerprints.
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red)](https://github.com/sponsors/Lorenzo-Coslado)
+
 ## 🚀 Features
 
 - **Complete fingerprinting**: Uses multiple fingerprinting techniques (Canvas, WebGL, Audio, Fonts, etc.)
