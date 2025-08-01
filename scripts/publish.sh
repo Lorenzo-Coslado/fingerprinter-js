@@ -44,14 +44,20 @@ npm version $VERSION_TYPE
 
 # Publication sur NPM (sans scope)
 echo "📤 Publication sur NPM..."
-cp package.json package-npm.json
-sed -i '' 's/"@lorenzo-coslado\/fingerprinter-js"/"fingerprinter-js"/' package-npm.json
-sed -i '' '/"publishConfig"/,+2d' package-npm.json
 
-# Temporarily change registry for NPM
+# Sauvegarder le package.json original
+cp package.json package-original.json
+
+# Modifier temporairement le package.json pour NPM
+sed -i '' 's/"@lorenzo-coslado\/fingerprinter-js"/"fingerprinter-js"/' package.json
+sed -i '' '/"publishConfig"/,+2d' package.json
+
+# Publier sur NPM
 npm config set registry https://registry.npmjs.org
-npm publish package-npm.json
-rm package-npm.json
+npm publish
+
+# Restaurer le package.json original
+mv package-original.json package.json
 
 # Publication sur GitHub Packages (avec scope)
 echo "📤 Publication sur GitHub Packages..."
