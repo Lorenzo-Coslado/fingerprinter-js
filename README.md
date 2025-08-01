@@ -1,4 +1,4 @@
-# FingerprintJS
+# FingerprinterJS
 
 A modern JavaScript library for generating unique and reliable browser fingerprints.
 
