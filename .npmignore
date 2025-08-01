@@ -1,43 +1,77 @@
-# Development files
+# Source files (only dist/ should be published)
 
 src/
-.eslintrc.js
-.gitignore
-tsconfig.json
-rollup.config.js
-jest.config.js
-
-# Examples and demos
-
 examples/
-demo.html
+scripts/
 
-# Documentation
+# Development files
 
-CONTRIBUTING.md
-CHANGELOG.md
-PUBLISHING.md
-
-# Test files
-
-**/\*.test.ts
-**/\*.spec.ts
-**tests**/
-
-# Build artifacts
-
-node_modules/
-\*.log
-.DS_Store
-
-# IDE files
-
+.github/
 .vscode/
 .idea/
-_.swp
-_.swo
 
-# Temporary files
+# Configuration files
 
+.gitignore
+.eslintrc._
+.prettierrc._
+.editorconfig
+tsconfig.json
+jest.config.js
+rollup.config.js
+
+# Testing
+
+**tests**/
+_.test.ts
+_.test.js
+_.spec.ts
+_.spec.js
+coverage/
+.nyc_output/
+junit.xml
+test-results.xml
+
+# Documentation (keep README.md and LICENSE)
+
+CHANGELOG.md
+CONTRIBUTING.md
+SECURITY.md
+PUBLISHING.md
+PUBLISHING-DUAL.md
+
+# Build tools
+
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment and temp files
+
+.env\*
 _.tmp
 _.temp
+.cache/
+.DS_Store
+
+# Package manager lock files
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# NPM package files
+
+package-npm.json
+
+# Git
+
+.git/
+.gitignore
+
+# TypeScript build info
+
+\*.tsbuildinfo
+.rollup.cache/

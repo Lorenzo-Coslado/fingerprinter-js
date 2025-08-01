@@ -1,11 +1,70 @@
+# Dependencies
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
 dist/
+build/
+lib/
+*.tsbuildinfo
+
+# Testing
 coverage/
-*.log
-.DS_Store
+.nyc_output/
+junit.xml
+test-results.xml
+
+# Environment variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Publishing documentation (internal use only)
 PUBLISHING.md
+PUBLISHING-DUAL.md
+
+# NPM configuration examples
+.npmrc.example
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# TypeScript
+*.tsbuildinfo
+
+# Rollup cache
+.rollup.cache/

@@ -1,5 +1,5 @@
 {
-  "name": "fingerprinter-js",
+  "name": "@lorenzo-coslado/fingerprinter-js",
   "version": "1.0.0",
   "description": "A modern JavaScript library for generating unique and reliable browser fingerprints with built-in bot detection",
   "main": "dist/index.js",
@@ -18,7 +18,11 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "prepublishOnly": "npm run build",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "publish:both": "./scripts/publish.sh",
+    "publish:patch": "./scripts/publish.sh patch",
+    "publish:minor": "./scripts/publish.sh minor",
+    "publish:major": "./scripts/publish.sh major"
   },
   "keywords": [
     "fingerprinting",
@@ -46,6 +50,9 @@
     "url": "https://github.com/Lorenzo-Coslado/fingerprinter-js/issues"
   },
   "homepage": "https://github.com/Lorenzo-Coslado/fingerprinter-js#readme",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
   "devDependencies": {
     "@types/jest": "^29.5.5",
     "@typescript-eslint/eslint-plugin": "^6.7.2",
