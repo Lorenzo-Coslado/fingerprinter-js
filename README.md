@@ -3,6 +3,8 @@
 A modern JavaScript library for generating unique and reliable browser fingerprints.
 
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red)](https://github.com/sponsors/Lorenzo-Coslado)
+[![npm version](https://img.shields.io/npm/v/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
+[![npm downloads](https://img.shields.io/npm/dt/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
 
 ## 🚀 Features
 
