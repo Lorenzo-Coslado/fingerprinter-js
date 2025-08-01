@@ -1,0 +1,42 @@
+# Development files
+
+src/
+.eslintrc.js
+.gitignore
+tsconfig.json
+rollup.config.js
+jest.config.js
+
+# Examples and demos
+
+examples/
+demo.html
+
+# Documentation
+
+CONTRIBUTING.md
+CHANGELOG.md
+
+# Test files
+
+**/\*.test.ts
+**/\*.spec.ts
+**tests**/
+
+# Build artifacts
+
+node_modules/
+\*.log
+.DS_Store
+
+# IDE files
+
+.vscode/
+.idea/
+_.swp
+_.swo
+
+# Temporary files
+
+_.tmp
+_.temp

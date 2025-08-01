@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fingerprinter.js Demo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f8f9fa;
+        line-height: 1.6;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      .demo-section {
+        margin: 20px 0;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid #007bff;
+      }
+      .result {
+        background: #e9ecef;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 15px 0;
+        font-family: "Monaco", "Consolas", monospace;
+        font-size: 13px;
+        overflow-x: auto;
+      }
+      .confidence {
+        font-size: 18px;
+        font-weight: bold;
+        padding: 10px;
+        border-radius: 6px;
+        text-align: center;
+        margin: 10px 0;
+      }
+      .confidence.high {
+        background: #d4edda;
+        color: #155724;
+      }
+      .confidence.medium {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .confidence.low {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 5px;
+        transition: background-color 0.2s;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 20px;
+      }
+      .suspicious {
+        background: #f8d7da;
+        border-color: #dc3545;
+      }
+      .safe {
+        background: #d4edda;
+        border-color: #28a745;
+      }
+      .warning {
+        background: #fff3cd;
+        border-color: #ffc107;
+      }
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        body {
+          padding: 10px;
+        }
+        .container {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Fingerprinter.js Demo</h1>
+        <p>Test browser fingerprinting with stability and suspect analysis</p>
+      </div>
+
+      <div class="demo-section">
+        <h3>🚀 Basic Fingerprint</h3>
+        <p>Generate a basic browser fingerprint with confidence score.</p>
+        <button onclick="generateBasicFingerprint()">
+          Generate Basic Fingerprint
+        </button>
+        <div id="basic-results"></div>
+      </div>
+
+      <div class="demo-section">
+        <h3>🔒 With Suspect Analysis</h3>
+        <p>Generate fingerprint with built-in bot and fraud detection.</p>
+        <button onclick="generateSuspectAnalysis()">
+          Analyze Suspect Score
+        </button>
+        <div id="suspect-results"></div>
+      </div>
+
+      <div class="demo-section">
+        <h3>⚖️ Stability Test</h3>
+        <p>Test fingerprint stability with multiple generations.</p>
+        <button onclick="testStability()">Test Stability</button>
+        <div id="stability-results"></div>
+      </div>
+
+      <div class="demo-section">
+        <h3>🎛️ Custom Configuration</h3>
+        <p>Generate fingerprint with custom options.</p>
+        <button onclick="generateCustomFingerprint()">
+          Custom Fingerprint
+        </button>
+        <div id="custom-results"></div>
+      </div>
+    </div>
+
+    <script src="dist/fingerprinter.umd.js"></script>
+    <script>
+      async function generateBasicFingerprint() {
+        const resultsDiv = document.getElementById("basic-results");
+        resultsDiv.innerHTML = "<p>🔄 Generating fingerprint...</p>";
+
+        try {
+          const result = await FingerprintJS.default.generate();
+
+          const confidenceClass = getConfidenceClass(result.confidence);
+
+          resultsDiv.innerHTML = `
+                    <div class="confidence ${confidenceClass}">
+                        Confidence: ${result.confidence}%
+                    </div>
+                    <div class="result">
+                        <strong>Fingerprint:</strong> ${result.fingerprint}<br>
+                        <strong>Components:</strong> ${
+                          Object.keys(result.components).length
+                        }<br>
+                        <strong>Timestamp:</strong> ${new Date().toLocaleString()}
+                    </div>
+                `;
+        } catch (error) {
+          resultsDiv.innerHTML = `<div class="result">❌ Error: ${error.message}</div>`;
+        }
+      }
+
+      async function generateSuspectAnalysis() {
+        const resultsDiv = document.getElementById("suspect-results");
+        resultsDiv.innerHTML = "<p>🔄 Analyzing suspect score...</p>";
+
+        try {
+          const result = await FingerprintJS.default.generate({
+            includeSuspectAnalysis: true,
+          });
+
+          const suspectAnalysis = result.suspectAnalysis;
+          const riskClass = getRiskClass(suspectAnalysis.riskLevel);
+
+          let html = `
+                    <div class="demo-section ${riskClass}">
+                        <h4>🕵️ Suspect Analysis Results</h4>
+                        <div class="confidence">
+                            Suspect Score: ${suspectAnalysis.score}/100
+                            <br><small>Risk Level: ${suspectAnalysis.riskLevel}</small>
+                        </div>
+                    </div>
+                `;
+
+          if (suspectAnalysis.signals.length > 0) {
+            html += "<h4>🚨 Detected Signals:</h4>";
+            suspectAnalysis.signals.forEach((signal) => {
+              html += `
+                            <div class="result">
+                                <strong>${signal.type}</strong> (Severity: ${signal.severity}/10)<br>
+                                ${signal.description}
+                            </div>
+                        `;
+            });
+          } else {
+            html +=
+              '<div class="result">✅ No suspicious signals detected</div>';
+          }
+
+          html += `
+                    <div class="result">
+                        <strong>Analysis Details:</strong><br>
+                        High severity signals: ${
+                          suspectAnalysis.details.highSeveritySignals
+                        }<br>
+                        Automation detected: ${
+                          suspectAnalysis.details.automationDetected
+                            ? "⚠️ Yes"
+                            : "✅ No"
+                        }<br>
+                        Inconsistencies found: ${
+                          suspectAnalysis.details.inconsistenciesFound
+                            ? "⚠️ Yes"
+                            : "✅ No"
+                        }
+                    </div>
+                `;
+
+          html += getRecommendations(suspectAnalysis.score);
+
+          resultsDiv.innerHTML = html;
+        } catch (error) {
+          resultsDiv.innerHTML = `<div class="result">❌ Error: ${error.message}</div>`;
+        }
+      }
+
+      async function testStability() {
+        const resultsDiv = document.getElementById("stability-results");
+        resultsDiv.innerHTML =
+          "<p>🔄 Testing stability (generating 3 fingerprints)...</p>";
+
+        try {
+          const results = [];
+          for (let i = 0; i < 3; i++) {
+            const result = await FingerprintJS.default.generate({
+              customData: {
+                test: "stability",
+                timestamp: Date.now(), // This should be filtered
+                version: "1.0", // This should be kept
+              },
+            });
+            results.push(result);
+            await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay
+          }
+
+          const allSame = results.every(
+            (r) => r.fingerprint === results[0].fingerprint
+          );
+
+          let html = `
+                    <div class="demo-section ${
+                      allSame ? "safe" : "suspicious"
+                    }">
+                        <h4>📊 Stability Test Results</h4>
+                        <div class="confidence">
+                            Stability: ${allSame ? "✅ STABLE" : "❌ UNSTABLE"}
+                        </div>
+                    </div>
+                `;
+
+          results.forEach((result, index) => {
+            html += `
+                        <div class="result">
+                            <strong>Generation ${index + 1}:</strong><br>
+                            Fingerprint: ${result.fingerprint}<br>
+                            Confidence: ${result.confidence}%
+                        </div>
+                    `;
+          });
+
+          resultsDiv.innerHTML = html;
+        } catch (error) {
+          resultsDiv.innerHTML = `<div class="result">❌ Error: ${error.message}</div>`;
+        }
+      }
+
+      async function generateCustomFingerprint() {
+        const resultsDiv = document.getElementById("custom-results");
+        resultsDiv.innerHTML = "<p>🔄 Generating custom fingerprint...</p>";
+
+        try {
+          const result = await FingerprintJS.default.generate({
+            excludeCanvas: true,
+            excludeWebGL: true,
+            customData: {
+              userType: "demo",
+              feature: "advanced",
+              timestamp: Date.now(), // Will be filtered
+            },
+            includeSuspectAnalysis: true,
+          });
+
+          const confidenceClass = getConfidenceClass(result.confidence);
+
+          let html = `
+                    <div class="confidence ${confidenceClass}">
+                        Confidence: ${result.confidence}%
+                    </div>
+                    <div class="result">
+                        <strong>Fingerprint:</strong> ${result.fingerprint}<br>
+                        <strong>Excluded:</strong> Canvas, WebGL<br>
+                        <strong>Components:</strong> ${
+                          Object.keys(result.components).length
+                        }<br>
+                        <strong>Custom Data:</strong> ${JSON.stringify(
+                          result.components.custom || "None"
+                        )}<br>
+                        <strong>Suspect Score:</strong> ${
+                          result.suspectAnalysis?.score || "N/A"
+                        }/100
+                    </div>
+                `;
+
+          html += "<h4>📋 Available Components:</h4>";
+          Object.entries(result.components).forEach(([key, value]) => {
+            if (key !== "custom") {
+              const hasError =
+                value && typeof value === "object" && value.error;
+              html += `
+                            <div class="result">
+                                <strong>${key}:</strong> ${
+                hasError ? `❌ ${value.error}` : "✅ Available"
+              }
+                            </div>
+                        `;
+            }
+          });
+
+          resultsDiv.innerHTML = html;
+        } catch (error) {
+          resultsDiv.innerHTML = `<div class="result">❌ Error: ${error.message}</div>`;
+        }
+      }
+
+      function getConfidenceClass(confidence) {
+        if (confidence >= 80) return "high";
+        if (confidence >= 60) return "medium";
+        return "low";
+      }
+
+      function getRiskClass(riskLevel) {
+        switch (riskLevel) {
+          case "HIGH":
+            return "suspicious";
+          case "MEDIUM":
+            return "warning";
+          case "LOW":
+            return "safe";
+          default:
+            return "";
+        }
+      }
+
+      function getRecommendations(score) {
+        if (score < 30) {
+          return `
+                    <div class="demo-section safe">
+                        <h4>✅ Legitimate User</h4>
+                        <ul>
+                            <li>Allow normal access</li>
+                            <li>No additional security measures needed</li>
+                            <li>Safe for analytics tracking</li>
+                        </ul>
+                    </div>
+                `;
+        } else if (score < 70) {
+          return `
+                    <div class="demo-section warning">
+                        <h4>⚠️ Vigilance Required</h4>
+                        <ul>
+                            <li>Monitor user behavior</li>
+                            <li>Consider additional authentication</li>
+                            <li>Limit access to sensitive features</li>
+                        </ul>
+                    </div>
+                `;
+        } else {
+          return `
+                    <div class="demo-section suspicious">
+                        <h4>🚨 Immediate Action Required</h4>
+                        <ul>
+                            <li>Likely bot or malicious user</li>
+                            <li>Request CAPTCHA verification</li>
+                            <li>Log this attempt for analysis</li>
+                            <li>Consider temporary IP blocking</li>
+                        </ul>
+                    </div>
+                `;
+        }
+      }
+
+      // Auto-generate basic fingerprint on load
+      document.addEventListener("DOMContentLoaded", function () {
+        setTimeout(generateBasicFingerprint, 500);
+      });
+    </script>
+  </body>
+</html>

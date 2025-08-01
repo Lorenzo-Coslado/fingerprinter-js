@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FingerprintJS Demo</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .container {
+        background: #f5f5f5;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+      .fingerprint-result {
+        background: #e8f5e8;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        word-break: break-all;
+      }
+      .components {
+        background: #fff;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+      }
+      .component {
+        margin: 10px 0;
+        padding: 10px;
+        background: #f9f9f9;
+        border-left: 3px solid #007acc;
+      }
+      .confidence {
+        padding: 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        text-align: center;
+        margin: 10px 0;
+      }
+      .high {
+        background: #d4edda;
+        color: #155724;
+      }
+      .medium {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .low {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      button {
+        background: #007acc;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 5px;
+      }
+      button:hover {
+        background: #005999;
+      }
+      .options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin: 20px 0;
+      }
+      .option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      pre {
+        background: #f4f4f4;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 FingerprintJS Demo</h1>
+
+    <div class="container">
+      <h2>Options</h2>
+      <div class="options">
+        <label class="option">
+          <input type="checkbox" id="excludeCanvas" /> Exclure Canvas
+        </label>
+        <label class="option">
+          <input type="checkbox" id="excludeWebGL" /> Exclure WebGL
+        </label>
+        <label class="option">
+          <input type="checkbox" id="excludeAudio" /> Exclure Audio
+        </label>
+        <label class="option">
+          <input type="checkbox" id="excludeFonts" /> Exclure Fonts
+        </label>
+        <label class="option">
+          <input type="checkbox" id="excludeLanguage" /> Exclure Langue
+        </label>
+        <label class="option">
+          <input type="checkbox" id="excludeTimezone" /> Exclure Timezone
+        </label>
+        <label class="option">
+          <input type="checkbox" id="excludeScreenResolution" /> Exclure Écran
+        </label>
+        <label class="option">
+          <input type="checkbox" id="excludePlugins" /> Exclure Plugins
+        </label>
+        <label class="option">
+          <input type="checkbox" id="includeTimestamp" /> Inclure données
+          instables (test)
+        </label>
+      </div>
+
+      <button onclick="generateFingerprint()">🎯 Générer Empreinte</button>
+      <button onclick="getComponents()">📊 Voir Composants</button>
+      <button onclick="compareFingerprints()">🔄 Comparer</button>
+      <button onclick="debugStability()">🔍 Test de Stabilité</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script type="module">
+      import { Fingerprint } from "../dist/index.esm.js";
+
+      window.Fingerprint = Fingerprint;
+      window.previousFingerprint = null;
+
+      window.generateFingerprint = async function () {
+        const options = getOptions();
+        const startTime = performance.now();
+
+        try {
+          const result = await Fingerprint.generate(options);
+          const endTime = performance.now();
+
+          window.previousFingerprint = result.fingerprint;
+
+          displayResult({
+            type: "fingerprint",
+            data: result,
+            time: endTime - startTime,
+          });
+        } catch (error) {
+          displayError(error);
+        }
+      };
+
+      window.getComponents = async function () {
+        const options = getOptions();
+        const startTime = performance.now();
+
+        try {
+          const fingerprint = new Fingerprint(options);
+          const components = await fingerprint.getComponents();
+          const endTime = performance.now();
+
+          displayResult({
+            type: "components",
+            data: components,
+            time: endTime - startTime,
+          });
+        } catch (error) {
+          displayError(error);
+        }
+      };
+
+      window.compareFingerprints = async function () {
+        if (!window.previousFingerprint) {
+          alert("Veuillez d'abord générer une empreinte");
+          return;
+        }
+
+        const options = getOptions();
+        const result = await Fingerprint.generate(options);
+
+        displayResult({
+          type: "comparison",
+          current: result.fingerprint,
+          previous: window.previousFingerprint,
+          same: result.fingerprint === window.previousFingerprint,
+        });
+      };
+
+      window.debugStability = async function () {
+        const options = getOptions();
+        const results = [];
+
+        try {
+          // Générer 3 empreintes successives
+          for (let i = 0; i < 3; i++) {
+            const fingerprint = new Fingerprint(options);
+            const components = await fingerprint.getComponents();
+            const result = await Fingerprint.generate(options);
+
+            results.push({
+              iteration: i + 1,
+              hash: result.fingerprint,
+              components: components,
+              confidence: result.confidence,
+            });
+
+            // Petite pause entre les générations
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
+
+          // Analyser les différences
+          const analysis = analyzeStability(results);
+          displayStabilityResults(results, analysis);
+        } catch (error) {
+          displayError(error);
+        }
+      };
+
+      function analyzeStability(results) {
+        const analysis = {
+          hashesIdentical: true,
+          changingComponents: new Set(),
+          stableComponents: new Set(),
+          differences: [],
+        };
+
+        // Comparer les hashs
+        const firstHash = results[0].hash;
+        for (let i = 1; i < results.length; i++) {
+          if (results[i].hash !== firstHash) {
+            analysis.hashesIdentical = false;
+          }
+        }
+
+        // Analyser les composants qui changent
+        const firstComponents = results[0].components;
+        const componentKeys = Object.keys(firstComponents);
+
+        for (const key of componentKeys) {
+          let isStable = true;
+          const firstValue = JSON.stringify(firstComponents[key]);
+
+          for (let i = 1; i < results.length; i++) {
+            const currentValue = JSON.stringify(results[i].components[key]);
+            if (currentValue !== firstValue) {
+              isStable = false;
+              analysis.changingComponents.add(key);
+              analysis.differences.push({
+                component: key,
+                iteration1: firstComponents[key],
+                iteration: i + 1,
+                value: results[i].components[key],
+              });
+            }
+          }
+
+          if (isStable) {
+            analysis.stableComponents.add(key);
+          }
+        }
+
+        return analysis;
+      }
+
+      function displayStabilityResults(results, analysis) {
+        const resultsDiv = document.getElementById("results");
+
+        const hashList = results
+          .map(
+            (r, i) =>
+              `<div style="margin: 5px 0; padding: 8px; background: ${
+                i === 0
+                  ? "#e8f5e8"
+                  : r.hash === results[0].hash
+                  ? "#e8f5e8"
+                  : "#ffe6e6"
+              }; border-radius: 3px;">
+                    <strong>Test ${r.iteration}:</strong> ${r.hash}
+                </div>`
+          )
+          .join("");
+
+        const changingComponentsList = Array.from(analysis.changingComponents)
+          .map(
+            (comp) =>
+              `<li style="color: #d63384;"><strong>${comp}</strong></li>`
+          )
+          .join("");
+
+        const stableComponentsList = Array.from(analysis.stableComponents)
+          .map(
+            (comp) =>
+              `<li style="color: #198754;"><strong>${comp}</strong></li>`
+          )
+          .join("");
+
+        const differencesList = analysis.differences
+          .map(
+            (diff) =>
+              `<div style="margin: 10px 0; padding: 10px; background: #fff3cd; border-radius: 5px;">
+                    <strong>Composant "${diff.component}" a changé:</strong>
+                    <details>
+                        <summary>Voir les valeurs</summary>
+                        <div style="margin: 5px 0;">
+                            <strong>Test 1:</strong>
+                            <pre style="background: #f8f9fa; padding: 5px; margin: 2px 0;">${JSON.stringify(
+                              diff.iteration1,
+                              null,
+                              2
+                            )}</pre>
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <strong>Test ${diff.iteration}:</strong>
+                            <pre style="background: #f8f9fa; padding: 5px; margin: 2px 0;">${JSON.stringify(
+                              diff.value,
+                              null,
+                              2
+                            )}</pre>
+                        </div>
+                    </details>
+                </div>`
+          )
+          .join("");
+
+        resultsDiv.innerHTML = `
+                <div class="container">
+                    <h2>🔍 Analyse de Stabilité</h2>
+                    
+                    <div style="margin: 20px 0;">
+                        <h3>Résultat: ${
+                          analysis.hashesIdentical ? "✅ Stable" : "❌ Instable"
+                        }</h3>
+                        <p>${
+                          analysis.hashesIdentical
+                            ? "Toutes les empreintes sont identiques - votre fingerprint est stable!"
+                            : `Les empreintes diffèrent. ${analysis.changingComponents.size} composant(s) varient.`
+                        }</p>
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <h3>Hashs générés:</h3>
+                        ${hashList}
+                    </div>
+                    
+                    ${
+                      analysis.changingComponents.size > 0
+                        ? `
+                        <div style="margin: 20px 0;">
+                            <h3>🔄 Composants instables (${analysis.changingComponents.size}):</h3>
+                            <ul>${changingComponentsList}</ul>
+                            <div style="margin-top: 10px;">
+                                <strong>Solutions possibles:</strong>
+                                <ul>
+                                    <li>Exclure ces composants si ils ne sont pas critiques</li>
+                                    <li>Identifier la source de variabilité</li>
+                                    <li>Implémenter une logique de stabilisation</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div style="margin: 20px 0;">
+                            <h3>Détails des changements:</h3>
+                            ${differencesList}
+                        </div>
+                    `
+                        : ""
+                    }
+                    
+                    ${
+                      analysis.stableComponents.size > 0
+                        ? `
+                        <div style="margin: 20px 0;">
+                            <h3>✅ Composants stables (${analysis.stableComponents.size}):</h3>
+                            <ul>${stableComponentsList}</ul>
+                        </div>
+                    `
+                        : ""
+                    }
+                </div>
+            `;
+      }
+
+      function getOptions() {
+        const baseCustomData = {
+          demo: true,
+          version: "1.0",
+          sessionType: "demo",
+        };
+
+        // Ajouter timestamp seulement si demandé (pour démontrer l'effet du filtrage)
+        if (document.getElementById("includeTimestamp").checked) {
+          baseCustomData.timestamp = Date.now();
+          baseCustomData.random = Math.random();
+        }
+
+        return {
+          excludeCanvas: document.getElementById("excludeCanvas").checked,
+          excludeWebGL: document.getElementById("excludeWebGL").checked,
+          excludeAudio: document.getElementById("excludeAudio").checked,
+          excludeFonts: document.getElementById("excludeFonts").checked,
+          excludeLanguage: document.getElementById("excludeLanguage").checked,
+          excludeTimezone: document.getElementById("excludeTimezone").checked,
+          excludeScreenResolution: document.getElementById(
+            "excludeScreenResolution"
+          ).checked,
+          excludePlugins: document.getElementById("excludePlugins").checked,
+          allowUnstableData:
+            document.getElementById("includeTimestamp").checked, // Permet les données instables seulement si timestamp inclus
+          customData: baseCustomData,
+        };
+      }
+
+      function displayResult(result) {
+        const resultsDiv = document.getElementById("results");
+
+        if (result.type === "fingerprint") {
+          const confidenceClass =
+            result.data.confidence >= 80
+              ? "high"
+              : result.data.confidence >= 60
+              ? "medium"
+              : "low";
+
+          resultsDiv.innerHTML = `
+                    <div class="container">
+                        <h2>🎯 Résultat de l'empreinte</h2>
+                        <div class="fingerprint-result">
+                            <strong>Empreinte:</strong> ${
+                              result.data.fingerprint
+                            }
+                        </div>
+                        <div class="confidence ${confidenceClass}">
+                            Niveau de confiance: ${result.data.confidence}%
+                        </div>
+                        <p><strong>Temps de génération:</strong> ${result.time.toFixed(
+                          2
+                        )}ms</p>
+                        <details>
+                            <summary>Voir les composants détaillés</summary>
+                            <pre>${JSON.stringify(
+                              result.data.components,
+                              null,
+                              2
+                            )}</pre>
+                        </details>
+                    </div>
+                `;
+        } else if (result.type === "components") {
+          const componentsHtml = Object.entries(result.data)
+            .map(
+              ([key, value]) => `
+                        <div class="component">
+                            <strong>${key}:</strong>
+                            <pre>${JSON.stringify(value, null, 2)}</pre>
+                        </div>
+                    `
+            )
+            .join("");
+
+          resultsDiv.innerHTML = `
+                    <div class="container">
+                        <h2>📊 Composants détaillés</h2>
+                        <p><strong>Temps de collecte:</strong> ${result.time.toFixed(
+                          2
+                        )}ms</p>
+                        <div class="components">
+                            ${componentsHtml}
+                        </div>
+                    </div>
+                `;
+        } else if (result.type === "comparison") {
+          resultsDiv.innerHTML = `
+                    <div class="container">
+                        <h2>🔄 Comparaison d'empreintes</h2>
+                        <div style="margin: 20px 0;">
+                            <div style="margin: 10px 0;">
+                                <strong>Précédente:</strong>
+                                <div class="fingerprint-result">${
+                                  result.previous
+                                }</div>
+                            </div>
+                            <div style="margin: 10px 0;">
+                                <strong>Actuelle:</strong>
+                                <div class="fingerprint-result">${
+                                  result.current
+                                }</div>
+                            </div>
+                            <div class="confidence ${
+                              result.same ? "high" : "low"
+                            }">
+                                ${
+                                  result.same
+                                    ? "✅ Identiques"
+                                    : "❌ Différentes"
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }
+      }
+
+      function displayError(error) {
+        document.getElementById("results").innerHTML = `
+                <div class="container">
+                    <h2>❌ Erreur</h2>
+                    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px;">
+                        ${error.message}
+                    </div>
+                </div>
+            `;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,64 @@
+{
+  "name": "fingerprinter-js",
+  "version": "1.0.0",
+  "description": "A modern JavaScript library for generating unique and reliable browser fingerprints with built-in bot detection",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "prepublishOnly": "npm run build",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "fingerprinting",
+    "browser-fingerprint",
+    "device-detection",
+    "fraud-detection",
+    "bot-detection",
+    "security",
+    "canvas-fingerprint",
+    "webgl-fingerprint",
+    "audio-fingerprint",
+    "user-tracking",
+    "browser-identification",
+    "typescript",
+    "privacy",
+    "analytics"
+  ],
+  "author": "Lorenzo Coslado",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lorenzo-Coslado/fingerprinter-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Lorenzo-Coslado/fingerprinter-js/issues"
+  },
+  "homepage": "https://github.com/Lorenzo-Coslado/fingerprinter-js#readme",
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "@typescript-eslint/eslint-plugin": "^6.7.2",
+    "@typescript-eslint/parser": "^6.7.2",
+    "eslint": "^8.49.0",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.0.5",
+    "rollup": "^3.29.2",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
