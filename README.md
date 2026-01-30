@@ -2,11 +2,11 @@
 
 🔐 **Enterprise-grade browser fingerprinting** with 19 collectors, advanced bot detection, and stable hashing.
 
-[![npm version](https://img.shields.io/npm/v/@lorenzo-coslado/fingerprinter-js)](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
-[![npm downloads](https://img.shields.io/npm/dt/@lorenzo-coslado/fingerprinter-js)](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
+[![npm version](https://img.shields.io/npm/v/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
+[![npm downloads](https://img.shields.io/npm/dt/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-[Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js) • [NPM Package](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
+[Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js) • [NPM Package](https://www.npmjs.com/package/fingerprinter-js)
 
 ---
 
@@ -22,13 +22,13 @@
 ## 📦 Installation
 
 ```bash
-npm install @lorenzo-coslado/fingerprinter-js
+npm install fingerprinter-js
 ```
 
 ## 🚀 Quick Start
 
 ```javascript
-import { Fingerprint } from "@lorenzo-coslado/fingerprinter-js";
+import { Fingerprint } from "fingerprinter-js";
 
 const result = await Fingerprint.generate({
   includeSuspectAnalysis: true
@@ -180,7 +180,7 @@ import {
   CanvasCollector, 
   WebGLCollector,
   FontsCollector 
-} from "@lorenzo-coslado/fingerprinter-js";
+} from "fingerprinter-js";
 
 // Use collectors individually
 const canvas = new CanvasCollector();
@@ -195,5 +195,5 @@ MIT © [Lorenzo Coslado](https://github.com/Lorenzo-Coslado)
 ## 🔗 Links
 
 - [GitHub Repository](https://github.com/Lorenzo-Coslado/fingerprinter-js)
-- [NPM Package](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
+- [NPM Package](https://www.npmjs.com/package/fingerprinter-js)
 - [Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js)
