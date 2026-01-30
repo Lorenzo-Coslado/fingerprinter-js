@@ -46,9 +46,9 @@ export function isBrowser(): boolean {
 /**
  * Safe JSON stringify that handles circular references
  */
-export function safeStringify(obj: any): string {
+export function safeStringify(obj: unknown): string {
   const seen = new WeakSet();
-  return JSON.stringify(obj, (key, val) => {
+  return JSON.stringify(obj, (_key, val) => {
     if (val != null && typeof val === "object") {
       if (seen.has(val)) {
         return "[Circular]";

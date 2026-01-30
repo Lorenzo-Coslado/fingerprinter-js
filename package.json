@@ -1,10 +1,22 @@
 {
   "name": "@lorenzo-coslado/fingerprinter-js",
-  "version": "1.0.3",
-  "description": "A modern JavaScript library for generating unique and reliable browser fingerprints with built-in bot detection",
+  "version": "2.0.0",
+  "description": "Enterprise-grade browser fingerprinting with 19 collectors and advanced bot detection",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./collectors": {
+      "import": "./dist/collectors/index.js",
+      "types": "./dist/collectors/index.d.ts"
+    }
+  },
+  "sideEffects": false,
   "files": [
     "dist/**/*",
     "README.md",
@@ -22,7 +34,8 @@
     "publish:both": "./scripts/publish.sh",
     "publish:patch": "./scripts/publish.sh patch",
     "publish:minor": "./scripts/publish.sh minor",
-    "publish:major": "./scripts/publish.sh major"
+    "publish:major": "./scripts/publish.sh major",
+    "demo": "npx serve demo"
   },
   "keywords": [
     "fingerprinting",
@@ -30,15 +43,20 @@
     "device-detection",
     "fraud-detection",
     "bot-detection",
+    "anti-bot",
     "security",
     "canvas-fingerprint",
     "webgl-fingerprint",
     "audio-fingerprint",
+    "webrtc",
     "user-tracking",
     "browser-identification",
     "typescript",
     "privacy",
-    "analytics"
+    "analytics",
+    "puppeteer-detection",
+    "headless-detection",
+    "automation-detection"
   ],
   "author": "Lorenzo Coslado",
   "license": "MIT",
@@ -49,7 +67,7 @@
   "bugs": {
     "url": "https://github.com/Lorenzo-Coslado/fingerprinter-js/issues"
   },
-  "homepage": "https://github.com/Lorenzo-Coslado/fingerprinter-js#readme",
+  "homepage": "https://lorenzo-coslado.github.io/fingerprinter-js",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },

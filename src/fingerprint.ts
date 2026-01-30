@@ -1,37 +1,63 @@
+/**
+ * FingerprinterJS v2.0
+ * Main Fingerprint Class
+ */
+
 import { SuspectAnalyzer } from "./suspect-analyzer";
 import {
-  ComponentCollector,
-  FingerprintOptions,
-  FingerprintResult,
+    ComponentCollector,
+    DEFAULT_OPTIONS,
+    FingerprintError,
+    FingerprintOptions,
+    FingerprintResult,
+    VERSION,
 } from "./types";
 import { isBrowser, safeStringify, sha256 } from "./utils";
 
 // Import all collectors
-import { AudioCollector, FontsCollector } from "./collectors/advanced";
 import {
-  LanguageCollector,
-  PluginsCollector,
-  ScreenCollector,
-  TimezoneCollector,
-  UserAgentCollector,
-} from "./collectors/basic";
-import { CanvasCollector, WebGLCollector } from "./collectors/canvas";
+    AudioCollector,
+    BatteryCollector,
+    CanvasCollector,
+    ClientHintsCollector,
+    ConnectionCollector,
+    FontsCollector,
+    HardwareCollector,
+    LanguageCollector,
+    MathCollector,
+    MediaDevicesCollector,
+    PermissionsCollector,
+    PluginsCollector,
+    ScreenCollector,
+    StorageCollector,
+    TimezoneCollector,
+    TouchCollector,
+    UserAgentCollector,
+    WebGLCollector,
+    WebRTCCollector,
+} from "./collectors";
 
 /**
  * Main Fingerprint class
+ * Generates unique browser fingerprints using multiple techniques
  */
 export class Fingerprint {
   private collectors: ComponentCollector[] = [];
   private options: FingerprintOptions;
 
   constructor(options: FingerprintOptions = {}) {
-    this.options = options;
+    this.options = { ...DEFAULT_OPTIONS, ...options };
     this.initializeCollectors();
   }
 
+  /**
+   * Initialize collectors based on options
+   */
   private initializeCollectors(): void {
-    // Always include basic collectors
-    this.collectors.push(new UserAgentCollector());
+    // Basic collectors (always included unless excluded)
+    if (!this.options.excludeUserAgent) {
+      this.collectors.push(new UserAgentCollector());
+    }
 
     if (!this.options.excludeLanguage) {
       this.collectors.push(new LanguageCollector());
@@ -49,6 +75,7 @@ export class Fingerprint {
       this.collectors.push(new PluginsCollector());
     }
 
+    // Graphics collectors
     if (!this.options.excludeCanvas) {
       this.collectors.push(new CanvasCollector());
     }
@@ -57,6 +84,7 @@ export class Fingerprint {
       this.collectors.push(new WebGLCollector());
     }
 
+    // Advanced collectors
     if (!this.options.excludeAudio) {
       this.collectors.push(new AudioCollector());
     }
@@ -64,12 +92,55 @@ export class Fingerprint {
     if (!this.options.excludeFonts) {
       this.collectors.push(new FontsCollector());
     }
+
+    // New v2.0 collectors
+    if (!this.options.excludeHardware) {
+      this.collectors.push(new HardwareCollector());
+    }
+
+    if (!this.options.excludeWebRTC) {
+      this.collectors.push(new WebRTCCollector());
+    }
+
+    if (!this.options.excludeClientHints) {
+      this.collectors.push(new ClientHintsCollector());
+    }
+
+    if (!this.options.excludeStorage) {
+      this.collectors.push(new StorageCollector());
+    }
+
+    if (!this.options.excludeBattery) {
+      this.collectors.push(new BatteryCollector());
+    }
+
+    if (!this.options.excludeConnection) {
+      this.collectors.push(new ConnectionCollector());
+    }
+
+    if (!this.options.excludeTouch) {
+      this.collectors.push(new TouchCollector());
+    }
+
+    if (!this.options.excludePermissions) {
+      this.collectors.push(new PermissionsCollector());
+    }
+
+    if (!this.options.excludeMath) {
+      this.collectors.push(new MathCollector());
+    }
+
+    if (!this.options.excludeMediaDevices) {
+      this.collectors.push(new MediaDevicesCollector());
+    }
   }
 
   /**
    * Normalize custom data to ensure stability by removing temporal values
    */
-  private normalizeCustomData(data: Record<string, any>): Record<string, any> {
+  private normalizeCustomData(
+    data: Record<string, unknown>
+  ): Record<string, unknown> {
     if (!data || typeof data !== "object") {
       return data;
     }
@@ -105,11 +176,6 @@ export class Fingerprint {
       if (typeof value === "number") {
         // Remove values that look like timestamps (very large numbers)
         if (value > 1000000000000 && value < 9999999999999) {
-          // Likely timestamp
-          delete normalized[key];
-        }
-        // Remove values that change too rapidly (potential random numbers)
-        if (Math.random && value === Math.random()) {
           delete normalized[key];
         }
       }
@@ -130,30 +196,72 @@ export class Fingerprint {
   }
 
   /**
+   * Calculate entropy from components
+   */
+  private calculateEntropy(components: Record<string, unknown>): number {
+    let totalEntropy = 0;
+
+    for (const collector of this.collectors) {
+      const data = components[collector.name];
+      if (data && !this.hasError(data)) {
+        totalEntropy += collector.metadata?.entropy || 2;
+      }
+    }
+
+    return totalEntropy;
+  }
+
+  /**
+   * Check if a component has an error
+   */
+  private hasError(data: unknown): boolean {
+    return (
+      data === "unknown" ||
+      data === "no-canvas" ||
+      (typeof data === "object" && data !== null && "error" in data)
+    );
+  }
+
+  /**
    * Generate a fingerprint
    */
   async generate(): Promise<FingerprintResult> {
     if (!isBrowser()) {
-      throw new Error(
-        "Fingerprinting is only available in browser environments"
+      throw new FingerprintError(
+        "Fingerprinting is only available in browser environments",
+        "NOT_BROWSER"
       );
     }
 
-    const components: Record<string, any> = {};
+    const startTime = performance.now();
+    const components: Record<string, unknown> = {};
     let confidence = 0;
 
-    // Collect all components
-    for (const collector of this.collectors) {
+    // Collect all components (in parallel for better performance)
+    const collectionPromises = this.collectors.map(async (collector) => {
       try {
         const data = await collector.collect();
-        components[collector.name] = data;
+        return { name: collector.name, data, error: null };
+      } catch (error) {
+        return {
+          name: collector.name,
+          data: null,
+          error: (error as Error).message,
+        };
+      }
+    });
 
-        // Calculate confidence based on available components
-        if (data && data !== "unknown" && data !== "no-canvas" && !data.error) {
+    const results = await Promise.all(collectionPromises);
+
+    // Process results
+    for (const result of results) {
+      if (result.error) {
+        components[result.name] = { error: result.error };
+      } else {
+        components[result.name] = result.data;
+        if (!this.hasError(result.data)) {
           confidence += 1;
         }
-      } catch (error) {
-        components[collector.name] = { error: (error as Error).message };
       }
     }
 
@@ -161,7 +269,6 @@ export class Fingerprint {
     if (this.options.customData) {
       let customDataToUse = this.options.customData;
 
-      // Normalize custom data unless explicitly disabled
       if (!this.options.allowUnstableData) {
         customDataToUse = this.normalizeCustomData(this.options.customData);
       }
@@ -177,9 +284,15 @@ export class Fingerprint {
       this.collectors.length + (this.options.customData ? 0.5 : 0);
     const confidencePercentage = Math.round((confidence / maxConfidence) * 100);
 
+    // Calculate entropy
+    const entropy = this.calculateEntropy(components);
+
     // Generate fingerprint hash
     const dataString = safeStringify(components);
     const fingerprint = await sha256(dataString);
+
+    // Calculate duration
+    const duration = performance.now() - startTime;
 
     // Generate suspect analysis if requested
     let suspectAnalysis = undefined;
@@ -191,6 +304,9 @@ export class Fingerprint {
       fingerprint,
       components,
       confidence: confidencePercentage,
+      entropy,
+      duration,
+      version: VERSION,
       suspectAnalysis,
     };
   }
@@ -198,28 +314,35 @@ export class Fingerprint {
   /**
    * Get component data without generating hash
    */
-  async getComponents(): Promise<Record<string, any>> {
+  async getComponents(): Promise<Record<string, unknown>> {
     if (!isBrowser()) {
-      throw new Error(
-        "Fingerprinting is only available in browser environments"
+      throw new FingerprintError(
+        "Fingerprinting is only available in browser environments",
+        "NOT_BROWSER"
       );
     }
 
-    const components: Record<string, any> = {};
+    const components: Record<string, unknown> = {};
 
-    for (const collector of this.collectors) {
+    // Collect all components in parallel
+    const collectionPromises = this.collectors.map(async (collector) => {
       try {
         const data = await collector.collect();
-        components[collector.name] = data;
+        return { name: collector.name, data };
       } catch (error) {
-        components[collector.name] = { error: (error as Error).message };
+        return { name: collector.name, data: { error: (error as Error).message } };
       }
+    });
+
+    const results = await Promise.all(collectionPromises);
+
+    for (const result of results) {
+      components[result.name] = result.data;
     }
 
     if (this.options.customData) {
       let customDataToUse = this.options.customData;
 
-      // Normalize custom data unless explicitly disabled
       if (!this.options.allowUnstableData) {
         customDataToUse = this.normalizeCustomData(this.options.customData);
       }
@@ -247,16 +370,37 @@ export class Fingerprint {
    */
   static getAvailableCollectors(): string[] {
     return [
+      // Basic
       "userAgent",
       "language",
       "timezone",
       "screen",
       "plugins",
+      // Graphics
       "canvas",
       "webgl",
+      // Advanced
       "audio",
       "fonts",
+      // New v2.0
+      "hardware",
+      "webrtc",
+      "clientHints",
+      "storage",
+      "battery",
+      "connection",
+      "touch",
+      "permissions",
+      "math",
+      "mediaDevices",
     ];
+  }
+
+  /**
+   * Get version
+   */
+  static getVersion(): string {
+    return VERSION;
   }
 }
 

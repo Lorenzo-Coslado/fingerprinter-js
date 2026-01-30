@@ -1,46 +1,99 @@
-import { ComponentCollector } from "../types";
-import { safeGet } from "../utils";
+/**
+ * Basic Collectors
+ * Simple browser property collectors
+ */
 
-export class UserAgentCollector implements ComponentCollector {
-  name = "userAgent";
+import { CollectorMetadata, ScreenData } from "../types";
+import { BaseCollector } from "./base";
+
+/**
+ * User Agent Collector
+ */
+export class UserAgentCollector extends BaseCollector<string> {
+  readonly name = "userAgent";
+  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
+    "userAgent",
+    {
+      weight: 8,
+      entropy: 10,
+      stable: true,
+      category: "browser",
+    }
+  );
 
   collect(): string {
-    return safeGet(() => navigator.userAgent, "unknown");
+    return this.safeCollect(() => navigator.userAgent, "unknown");
   }
 }
 
-export class LanguageCollector implements ComponentCollector {
-  name = "language";
+/**
+ * Language Collector
+ */
+export class LanguageCollector extends BaseCollector<string[]> {
+  readonly name = "language";
+  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
+    "language",
+    {
+      weight: 6,
+      entropy: 5,
+      stable: true,
+      category: "browser",
+    }
+  );
 
   collect(): string[] {
-    return safeGet(() => {
-      const languages = [];
+    return this.safeCollect(() => {
+      const languages: string[] = [];
       if (navigator.language) {
         languages.push(navigator.language);
       }
       if (navigator.languages) {
         languages.push(...navigator.languages);
       }
-      return [...new Set(languages)]; // Remove duplicates
+      return [...new Set(languages)];
     }, ["unknown"]);
   }
 }
 
-export class TimezoneCollector implements ComponentCollector {
-  name = "timezone";
+/**
+ * Timezone Collector
+ */
+export class TimezoneCollector extends BaseCollector<string> {
+  readonly name = "timezone";
+  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
+    "timezone",
+    {
+      weight: 7,
+      entropy: 6,
+      stable: true,
+      category: "browser",
+    }
+  );
 
   collect(): string {
-    return safeGet(() => {
+    return this.safeCollect(() => {
       return Intl.DateTimeFormat().resolvedOptions().timeZone;
     }, "unknown");
   }
 }
 
-export class ScreenCollector implements ComponentCollector {
-  name = "screen";
+/**
+ * Screen Collector
+ */
+export class ScreenCollector extends BaseCollector<ScreenData> {
+  readonly name = "screen";
+  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
+    "screen",
+    {
+      weight: 7,
+      entropy: 8,
+      stable: true,
+      category: "hardware",
+    }
+  );
 
-  collect(): object {
-    return safeGet(
+  collect(): ScreenData {
+    return this.safeCollect(
       () => ({
         width: screen.width,
         height: screen.height,
@@ -63,12 +116,30 @@ export class ScreenCollector implements ComponentCollector {
   }
 }
 
-export class PluginsCollector implements ComponentCollector {
-  name = "plugins";
+/**
+ * Plugins Collector
+ */
+export class PluginsCollector extends BaseCollector<
+  Array<{ name: string; description: string; filename: string }>
+> {
+  readonly name = "plugins";
+  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
+    "plugins",
+    {
+      weight: 5,
+      entropy: 6,
+      stable: true,
+      category: "browser",
+    }
+  );
 
   collect(): Array<{ name: string; description: string; filename: string }> {
-    return safeGet(() => {
-      const plugins = [];
+    return this.safeCollect(() => {
+      const plugins: Array<{
+        name: string;
+        description: string;
+        filename: string;
+      }> = [];
       for (let i = 0; i < navigator.plugins.length; i++) {
         const plugin = navigator.plugins[i];
         plugins.push({
