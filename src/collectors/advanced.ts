@@ -15,7 +15,7 @@ export class AudioCollector extends AsyncBaseCollector<AudioData> {
   readonly metadata: CollectorMetadata = BaseCollector.createMetadata("audio", {
     weight: 8,
     entropy: 10,
-    stable: true,
+    stable: false, // Audio fingerprint can vary on first run
     category: "audio",
   });
 

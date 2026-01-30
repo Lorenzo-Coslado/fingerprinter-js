@@ -532,13 +532,13 @@
       </header>
 
       <div class="actions">
-        <button class="btn btn-primary" id="generateBtn" onclick="generateFingerprint()">
+        <button class="btn btn-primary" id="generateBtn">
           <span>🎯</span> Generate Fingerprint
         </button>
-        <button class="btn btn-secondary" id="stabilityBtn" onclick="runStabilityTest()">
+        <button class="btn btn-secondary" id="stabilityBtn">
           <span>🔄</span> Stability Test
         </button>
-        <button class="btn btn-secondary" onclick="toggleOptions()">
+        <button class="btn btn-secondary" id="optionsBtn">
           <span>⚙️</span> Options
         </button>
       </div>
@@ -589,7 +589,7 @@
 
           <div class="fingerprint-hash">
             <span id="fingerprintHash">-</span>
-            <button class="copy-btn" onclick="copyFingerprint()">Copy</button>
+            <button class="copy-btn">Copy</button>
           </div>
 
           <div class="stats-grid">
@@ -861,6 +861,12 @@
           setTimeout(() => btn.textContent = "Copy", 2000);
         }
       };
+
+      // Add event listeners after module loads
+      document.getElementById("generateBtn").addEventListener("click", window.generateFingerprint);
+      document.getElementById("stabilityBtn").addEventListener("click", window.runStabilityTest);
+      document.getElementById("optionsBtn").addEventListener("click", window.toggleOptions);
+      document.querySelector(".copy-btn").addEventListener("click", window.copyFingerprint);
     </script>
   </body>
 </html>

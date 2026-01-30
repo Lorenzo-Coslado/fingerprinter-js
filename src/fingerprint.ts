@@ -235,18 +235,25 @@ export class Fingerprint {
 
     const startTime = performance.now();
     const components: Record<string, unknown> = {};
+    const stableComponents: Record<string, unknown> = {}; // Only stable data for hashing
     let confidence = 0;
 
     // Collect all components (in parallel for better performance)
     const collectionPromises = this.collectors.map(async (collector) => {
       try {
         const data = await collector.collect();
-        return { name: collector.name, data, error: null };
+        return { 
+          name: collector.name, 
+          data, 
+          error: null,
+          stable: collector.metadata?.stable ?? true 
+        };
       } catch (error) {
         return {
           name: collector.name,
           data: null,
           error: (error as Error).message,
+          stable: collector.metadata?.stable ?? true
         };
       }
     });
@@ -259,6 +266,12 @@ export class Fingerprint {
         components[result.name] = { error: result.error };
       } else {
         components[result.name] = result.data;
+        
+        // Only add stable components to the hash source
+        if (result.stable && !this.hasError(result.data)) {
+          stableComponents[result.name] = result.data;
+        }
+        
         if (!this.hasError(result.data)) {
           confidence += 1;
         }
@@ -275,6 +288,7 @@ export class Fingerprint {
 
       if (Object.keys(customDataToUse).length > 0) {
         components.custom = customDataToUse;
+        stableComponents.custom = customDataToUse; // Custom data is user-controlled
         confidence += 0.5;
       }
     }
@@ -284,17 +298,17 @@ export class Fingerprint {
       this.collectors.length + (this.options.customData ? 0.5 : 0);
     const confidencePercentage = Math.round((confidence / maxConfidence) * 100);
 
-    // Calculate entropy
+    // Calculate entropy (from all components)
     const entropy = this.calculateEntropy(components);
 
-    // Generate fingerprint hash
-    const dataString = safeStringify(components);
+    // Generate fingerprint hash from STABLE components only
+    const dataString = safeStringify(stableComponents);
     const fingerprint = await sha256(dataString);
 
     // Calculate duration
     const duration = performance.now() - startTime;
 
-    // Generate suspect analysis if requested
+    // Generate suspect analysis if requested (uses all components)
     let suspectAnalysis = undefined;
     if (this.options.includeSuspectAnalysis) {
       suspectAnalysis = SuspectAnalyzer.analyze(components);
@@ -302,7 +316,7 @@ export class Fingerprint {
 
     return {
       fingerprint,
-      components,
+      components, // Returns ALL components for visibility
       confidence: confidencePercentage,
       entropy,
       duration,

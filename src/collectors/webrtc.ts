@@ -44,7 +44,7 @@ export class WebRTCCollector extends AsyncBaseCollector<WebRTCData> {
   }
 
   private async collectWebRTC(): Promise<WebRTCData> {
-    const localIPs: string[] = [];
+    const localIPs = new Set<string>();
 
     try {
       const RTCPeerConnectionClass =
@@ -56,37 +56,76 @@ export class WebRTCCollector extends AsyncBaseCollector<WebRTCData> {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
       });
 
-      pc.createDataChannel("");
+      // Listen for ICE candidates - this is where local IPs are revealed
+      const candidatePromise = new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => resolve(), 3000); // Max 3 seconds
 
+        pc.onicecandidate = (event) => {
+          if (!event.candidate) {
+            // ICE gathering complete
+            clearTimeout(timeout);
+            resolve();
+            return;
+          }
+
+          const candidate = event.candidate.candidate;
+          
+          // Extract IP from ICE candidate string
+          // Format: "candidate:... typ host ..." or "candidate:... typ srflx raddr IP ..."
+          const ipv4Match = candidate.match(/([0-9]{1,3}\.){3}[0-9]{1,3}/);
+          const ipv6Match = candidate.match(/([a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}/);
+          
+          if (ipv4Match) {
+            const ip = ipv4Match[0];
+            // Filter out invalid IPs
+            if (ip !== "0.0.0.0" && !ip.startsWith("0.") && !ip.startsWith("127.")) {
+              localIPs.add(ip);
+            }
+          }
+          
+          if (ipv6Match) {
+            const ip = ipv6Match[0];
+            // Filter out loopback
+            if (ip !== "::1") {
+              localIPs.add(ip);
+            }
+          }
+
+          // Also check for address field directly
+          if (event.candidate.address) {
+            const addr = event.candidate.address;
+            // Skip mDNS addresses (UUID-like format used by Chrome)
+            if (!addr.includes("-") && !addr.endsWith(".local")) {
+              localIPs.add(addr);
+            }
+          }
+        };
+      });
+
+      pc.createDataChannel("");
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Extract IPs from SDP
+      // Wait for ICE candidates
+      await candidatePromise;
+
+      // Also extract from final SDP
       const sdp = pc.localDescription?.sdp || "";
-      const ipRegex = /([0-9]{1,3}\.){3}[0-9]{1,3}/g;
-      const ipv6Regex = /([a-f0-9]{1,4}:){7}[a-f0-9]{1,4}/gi;
-
-      const ipMatches = sdp.match(ipRegex) || [];
-      const ipv6Matches = sdp.match(ipv6Regex) || [];
-
-      // Filter out 0.0.0.0 and common STUN IPs
-      const validIPs = [...ipMatches, ...ipv6Matches].filter(
-        (ip) =>
-          ip !== "0.0.0.0" &&
-          !ip.startsWith("0.") &&
-          !ip.startsWith("127.")
-      );
-
-      localIPs.push(...new Set(validIPs));
-
-      // Wait a bit for ICE candidates
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const sdpIpMatches = sdp.match(/(?:^|\s)([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})(?:\s|$)/gm);
+      if (sdpIpMatches) {
+        sdpIpMatches.forEach((match) => {
+          const ip = match.trim();
+          if (ip !== "0.0.0.0" && !ip.startsWith("0.") && !ip.startsWith("127.")) {
+            localIPs.add(ip);
+          }
+        });
+      }
 
       pc.close();
 
       return {
         hasWebRTC: true,
-        localIPs,
+        localIPs: Array.from(localIPs),
         sdpFingerprint: this.hashSDP(sdp),
       };
     } catch (error) {

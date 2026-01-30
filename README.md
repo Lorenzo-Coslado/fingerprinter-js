@@ -1,175 +1,199 @@
 # FingerprinterJS v2.0
 
-Enterprise-grade browser fingerprinting with **19 collectors** and advanced **bot detection**.
+🔐 **Enterprise-grade browser fingerprinting** with 19 collectors, advanced bot detection, and stable hashing.
 
-[![Demo](https://img.shields.io/badge/Live-Demo-6366f1)](https://lorenzo-coslado.github.io/fingerprinter-js)
-[![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red)](https://github.com/sponsors/Lorenzo-Coslado)
-[![npm version](https://img.shields.io/npm/v/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
-[![npm downloads](https://img.shields.io/npm/dt/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
+[![npm version](https://img.shields.io/npm/v/@lorenzo-coslado/fingerprinter-js)](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
+[![npm downloads](https://img.shields.io/npm/dt/@lorenzo-coslado/fingerprinter-js)](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🚀 Features
+[Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js) • [NPM Package](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
 
-- **19 Collectors**: userAgent, language, timezone, screen, plugins, canvas, webGL, audio, fonts, hardware, webRTC, clientHints, storage, battery, connection, touch, permissions, math, mediaDevices
-- **Bot Detection**: Detects Puppeteer, Playwright, Selenium, PhantomJS, CDP, headless browsers
-- **TypeScript**: Full type safety with comprehensive interfaces
-- **Modular**: Enable/disable any collector
-- **High Entropy**: ~80+ bits of entropy for unique identification
-- **Stable**: Smart filtering of temporal data
-- **Zero Dependencies**: Lightweight and fast
+---
+
+## ✨ Features
+
+- **19 Collectors** - Comprehensive browser data collection
+- **Stable Hashing** - Only stable data contributes to fingerprint hash
+- **Bot Detection** - Detects Puppeteer, Playwright, Selenium, headless browsers
+- **TypeScript** - Full type safety
+- **Zero Dependencies** - Lightweight (~15KB gzipped)
+- **Parallel Collection** - Fast data gathering
 
 ## 📦 Installation
 
 ```bash
-npm install fingerprinter-js
+npm install @lorenzo-coslado/fingerprinter-js
 ```
 
-## 🔧 Quick Start
+## 🚀 Quick Start
 
 ```javascript
-import Fingerprint from "fingerprinter-js";
+import { Fingerprint } from "@lorenzo-coslado/fingerprinter-js";
 
-// Generate fingerprint with bot detection
 const result = await Fingerprint.generate({
   includeSuspectAnalysis: true
 });
 
-console.log(result.fingerprint);   // "a1b2c3d4e5f6..."
-console.log(result.confidence);    // 95
-console.log(result.entropy);       // 82
-console.log(result.suspectAnalysis.riskLevel); // "LOW"
+console.log(result.fingerprint);  // "a1b2c3d4..."
+console.log(result.confidence);   // 100
+console.log(result.entropy);      // 85
+console.log(result.suspectAnalysis?.riskLevel); // "LOW"
 ```
 
 ## 📊 Result Structure
 
 ```typescript
 interface FingerprintResult {
-  fingerprint: string;          // SHA-256 hash
-  components: Record<string, unknown>;
-  confidence: number;           // 0-100
-  entropy: number;              // Bits of entropy
-  duration: number;             // Generation time (ms)
-  version: string;              // Library version
+  fingerprint: string;        // SHA-256 hash (stable collectors only)
+  components: Record<string, unknown>; // All collected data
+  confidence: number;         // 0-100%
+  entropy: number;            // Bits of entropy
+  duration: number;           // Generation time (ms)
+  version: string;            // "2.0.0"
   suspectAnalysis?: {
-    score: number;              // 0-100 (0=legit, 100=bot)
+    score: number;            // 0-100 (higher = more suspicious)
     riskLevel: "LOW" | "MEDIUM" | "HIGH";
     signals: SuspectSignal[];
   };
 }
 ```
 
-## 🎯 All 19 Collectors
+## 🎯 Collectors
 
-| Collector | Description | Entropy | Exclude Option |
-|-----------|-------------|---------|----------------|
-| `userAgent` | Browser User-Agent | ~10 bits | `excludeUserAgent` |
-| `language` | Preferred languages | ~5 bits | `excludeLanguage` |
-| `timezone` | Timezone | ~6 bits | `excludeTimezone` |
-| `screen` | Resolution, color depth | ~8 bits | `excludeScreenResolution` |
-| `plugins` | Installed plugins | ~6 bits | `excludePlugins` |
-| `canvas` | 2D canvas fingerprint | ~12 bits | `excludeCanvas` |
-| `webgl` | WebGL info | ~15 bits | `excludeWebGL` |
-| `audio` | Audio processing | ~10 bits | `excludeAudio` |
-| `fonts` | Available fonts | ~12 bits | `excludeFonts` |
-| `hardware` | CPU cores, memory | ~8 bits | `excludeHardware` |
-| `webrtc` | Local IPs | ~8 bits | `excludeWebRTC` |
-| `clientHints` | UA Client Hints | ~10 bits | `excludeClientHints` |
-| `storage` | Storage availability | ~4 bits | `excludeStorage` |
-| `battery` | Battery status | ~3 bits | `excludeBattery` |
-| `connection` | Network info | ~4 bits | `excludeConnection` |
-| `touch` | Touch capabilities | ~4 bits | `excludeTouch` |
-| `permissions` | Permission states | ~5 bits | `excludePermissions` |
-| `math` | Math precision | ~6 bits | `excludeMath` |
-| `mediaDevices` | Cameras/mics count | ~5 bits | `excludeMediaDevices` |
+### Stable Collectors (included in hash)
+
+| Collector | Description | Entropy |
+|-----------|-------------|---------|
+| `userAgent` | Browser User-Agent | ~8 bits |
+| `language` | Preferred languages | ~3 bits |
+| `timezone` | Timezone offset & name | ~4 bits |
+| `screen` | Resolution, color depth | ~6 bits |
+| `plugins` | Installed plugins | ~5 bits |
+| `canvas` | 2D canvas fingerprint | ~10 bits |
+| `webgl` | GPU vendor & renderer | ~9 bits |
+| `fonts` | Available system fonts | ~8 bits |
+| `hardware` | CPU cores, memory, platform | ~5 bits |
+| `clientHints` | UA Client Hints API | ~7 bits |
+| `storage` | Storage API availability | ~4 bits |
+| `touch` | Touch capabilities | ~4 bits |
+| `math` | Math precision values | ~2 bits |
+| `mediaDevices` | Cameras/mics count | ~5 bits |
+
+### Unstable Collectors (data collected but NOT in hash)
+
+| Collector | Description | Why Unstable |
+|-----------|-------------|--------------|
+| `webrtc` | Local IPs, SDP | IPs can change |
+| `battery` | Battery level & charging | Values fluctuate |
+| `connection` | Network type & speed | Variables change |
+| `permissions` | Permission states | User can change |
+| `audio` | Audio processing fingerprint | Varies on first run |
+
+> ⚠️ Unstable collectors provide useful data for analysis but don't affect the fingerprint hash, ensuring consistent identification.
 
 ## 🛡️ Bot Detection
-
-Detects automation tools and suspicious environments:
 
 ```javascript
 const result = await Fingerprint.generate({
   includeSuspectAnalysis: true
 });
 
-if (result.suspectAnalysis.riskLevel === "HIGH") {
-  // Block or challenge
-  console.log("Detected:", result.suspectAnalysis.signals);
+if (result.suspectAnalysis?.riskLevel === "HIGH") {
+  console.log("Bot detected:", result.suspectAnalysis.signals);
 }
 ```
 
 ### Detection Capabilities
 
-- **Automation**: Puppeteer, Playwright, Selenium, PhantomJS
-- **Headless**: HeadlessChrome, CDP artifacts
+- **Automation Tools**: Puppeteer, Playwright, Selenium, PhantomJS
+- **Headless Browsers**: HeadlessChrome, CDP artifacts
 - **Inconsistencies**: UA/platform mismatch, hardware anomalies
 - **Privacy Tools**: Canvas noise, property tampering
 - **Known Bots**: Googlebot, Bingbot, crawlers
 
-## 🔧 Advanced Usage
+## 🔧 Configuration Options
 
 ```javascript
-import { Fingerprint, CanvasCollector, WebGLCollector } from "fingerprinter-js";
-
-// Custom collector options
-const fp = new Fingerprint({
-  excludeWebRTC: true,      // Skip WebRTC
-  excludeBattery: true,     // Skip Battery
-  timeout: 3000,            // 3s timeout per collector
+const result = await Fingerprint.generate({
+  // Exclude specific collectors
+  excludeCanvas: false,
+  excludeWebGL: false,
+  excludeAudio: false,
+  excludeFonts: false,
+  excludeWebRTC: false,
+  excludeHardware: false,
+  excludeClientHints: false,
+  excludeStorage: false,
+  excludeBattery: false,
+  excludeConnection: false,
+  excludeTouch: false,
+  excludePermissions: false,
+  excludeMath: false,
+  excludeMediaDevices: false,
+  
+  // Bot detection
+  includeSuspectAnalysis: true,
+  
+  // Custom data (optional)
   customData: {
-    userId: "12345",
-    version: "1.0"
-  }
+    userId: "12345"
+  },
+  
+  // Allow unstable custom data
+  allowUnstableData: false,
+  
+  // Timeout per collector (ms)
+  timeout: 5000
 });
-
-const result = await fp.generate();
-
-// Or use collectors individually
-const canvas = new CanvasCollector();
-const canvasData = canvas.collect();
 ```
-
-## 📈 Confidence Levels
-
-| Level | Score | Meaning |
-|-------|-------|---------|
-| High | 90-100% | Very reliable, most collectors successful |
-| Medium | 70-89% | Reliable, some collectors unavailable |
-| Low | 50-69% | Moderate reliability |
-| Very Low | <50% | Few collectors, unstable |
 
 ## 📱 Browser Support
 
-- Chrome 60+
-- Firefox 55+
-- Safari 12+
-- Edge 79+
-- No Node.js support (browser-only)
+| Browser | Version |
+|---------|---------|
+| Chrome | 60+ |
+| Firefox | 55+ |
+| Safari | 12+ |
+| Edge | 79+ |
 
-## 🔄 Stability
+> ⚠️ This library is browser-only. Node.js is not supported.
 
-FingerprintJS automatically filters unstable data:
+## 🔄 Stability Guarantee
+
+The fingerprint hash is **stable across page reloads** because:
+
+1. Only **stable collectors** contribute to the hash
+2. Temporal values (timestamps, UUIDs) are automatically filtered from custom data
+3. Unstable platform data (battery level, network speed) is collected but excluded from hash
 
 ```javascript
-const fp = new Fingerprint({
-  customData: {
-    version: "1.0",           // ✅ Kept
-    timestamp: Date.now(),    // ❌ Filtered
-    sessionId: "uuid-here",   // ❌ Filtered
-  }
-});
+// This will produce the same hash every time
+const result1 = await Fingerprint.generate();
+const result2 = await Fingerprint.generate();
+console.log(result1.fingerprint === result2.fingerprint); // true
+```
 
-// Use allowUnstableData: true to keep all data
+## 🧩 Individual Collectors
+
+```javascript
+import { 
+  CanvasCollector, 
+  WebGLCollector,
+  FontsCollector 
+} from "@lorenzo-coslado/fingerprinter-js";
+
+// Use collectors individually
+const canvas = new CanvasCollector();
+const data = canvas.collect();
+console.log(data);
 ```
 
 ## 📄 License
 
-MIT © Lorenzo Coslado
+MIT © [Lorenzo Coslado](https://github.com/Lorenzo-Coslado)
 
-## 🤝 Contributing
+## 🔗 Links
 
-Contributions welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before submitting PRs.
-
-## 📞 Support
-
-- 🐛 [Issues](https://github.com/Lorenzo-Coslado/fingerprinter-js/issues)
-- 💬 [Discussions](https://github.com/Lorenzo-Coslado/fingerprinter-js/discussions)
-- 🌐 [Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js)
+- [GitHub Repository](https://github.com/Lorenzo-Coslado/fingerprinter-js)
+- [NPM Package](https://www.npmjs.com/package/@lorenzo-coslado/fingerprinter-js)
+- [Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js)
