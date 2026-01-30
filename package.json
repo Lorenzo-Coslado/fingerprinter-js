@@ -69,7 +69,8 @@
   },
   "homepage": "https://lorenzo-coslado.github.io/fingerprinter-js",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
