@@ -1,5 +1,5 @@
 {
-  "name": "@lorenzo-coslado/fingerprinter-js",
+  "name": "fingerprinter-js",
   "version": "2.0.0",
   "description": "Enterprise-grade browser fingerprinting with 19 collectors and advanced bot detection",
   "main": "dist/index.js",
