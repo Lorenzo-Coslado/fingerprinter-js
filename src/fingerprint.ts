@@ -240,6 +240,10 @@ export class Fingerprint {
     let succeeded = 0;
     const run = async ({ collector, project, blocked }: Task): Promise<void> => {
       const begin = now();
+      const localDeadline = Math.min(
+        begin + (this.options.timeout ?? DEFAULT_OPTIONS.timeout),
+        deadline,
+      );
       const controller = new AbortController();
       const cleanups: Array<() => void> = [];
       let finished = false;
@@ -260,6 +264,19 @@ export class Fingerprint {
           localCode,
           collector.name,
         );
+      const assertActive = (): void => {
+        if (globalController.signal.aborted) {
+          localCode = stopCode;
+          controller.abort();
+        }
+        if (controller.signal.aborted) throw stopped();
+        // Synchronous work and promise microtasks can finish before timer callbacks run.
+        if (now() >= localDeadline) {
+          localCode = 'COLLECTOR_TIMEOUT';
+          controller.abort();
+          throw stopped();
+        }
+      };
       const context: CollectorContext = {
         signal: controller.signal,
         onCleanup: (cleanup) => {
@@ -268,46 +285,50 @@ export class Fingerprint {
         },
       };
       try {
-        if (globalController.signal.aborted || now() >= deadline) {
-          localCode = globalController.signal.aborted ? stopCode : 'COLLECTOR_TIMEOUT';
-          throw stopped();
-        }
+        assertActive();
         if (blocked) throw new FingerprintError(blocked, 'BLOCKED', collector.name);
         globalController.signal.addEventListener('abort', stop, { once: true });
-        timer = setTimeout(
-          timeout,
-          Math.min(this.options.timeout ?? DEFAULT_OPTIONS.timeout, Math.max(0, deadline - now())),
-        );
+        timer = setTimeout(timeout, Math.max(0, localDeadline - now()));
         const cancellation = new Promise<never>((_resolve, reject) => {
           abortListener = (): void => reject(stopped());
           controller.signal.addEventListener('abort', abortListener, { once: true });
         });
         const work = Promise.resolve().then(() => {
-          if (controller.signal.aborted) throw stopped();
+          assertActive();
           if (!collector.isSupported())
             throw new FingerprintError(
               `${collector.name} is unsupported`,
               'UNSUPPORTED',
               collector.name,
             );
+          assertActive();
           return collector.collect(context);
         });
         const data = await Promise.race([work, cancellation]);
-        if (controller.signal.aborted || now() >= deadline) throw stopped();
+        assertActive();
         validateObservation(data, collector.name);
+        assertActive();
         const value = snapshot(data);
+        assertActive();
+        let projectedValue: unknown;
         if (project) {
           const projection = project(value);
-          if (projection !== undefined) projected[collector.name] = snapshot(projection);
+          assertActive();
+          if (projection !== undefined) projectedValue = snapshot(projection);
         }
+        assertActive();
+        if (projectedValue !== undefined) projected[collector.name] = projectedValue;
         Object.assign(components, { [collector.name]: value });
         collectorResults[collector.name] = { status: 'ok', duration: now() - begin, value };
         succeeded++;
       } catch (error) {
-        collectorResults[collector.name] = failure(
-          controller.signal.aborted ? stopped() : error,
-          now() - begin,
-        );
+        let cause = error;
+        try {
+          assertActive();
+        } catch (interruption) {
+          cause = interruption;
+        }
+        collectorResults[collector.name] = failure(cause, now() - begin);
       } finally {
         finished = true;
         if (timer !== undefined) clearTimeout(timer);

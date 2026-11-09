@@ -5,12 +5,12 @@ Observed locally on **9 November 2026**, macOS ARM, Node **26.13.0**, npm **11.2
 | Check                     | Observed result                                                                                                                                                                  |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run check`           | Pass: formatting, ESLint, library/test/example types, unit tests, build and packed-package checks                                                                                |
-| Unit and regression tests | **99 passed**, five suites                                                                                                                                                       |
-| Unit source coverage      | **83.18% lines**, **79.16% branches**, **82.69% functions**; browser execution is not counted in these percentages                                                               |
-| Constant-hash mutation    | **64** targeted baseline tests pass; replacing `sha256()` with a valid-shaped 64-zero constant causes **15 assertion failures** across utilities and identity contracts          |
+| Unit and regression tests | **106 passed**, five suites                                                                                                                                                      |
+| Unit source coverage      | **83.62% lines**, **79.91% branches**, **82.80% functions**; browser execution is not counted in these percentages                                                               |
+| Constant-hash mutation    | **71** targeted baseline tests pass; replacing `sha256()` with a valid-shaped 64-zero constant causes **15 assertion failures** across utilities and identity contracts          |
 | Packed consumer checks    | ESM named/default, CommonJS, UMD global, collector/utility subpaths, SSR-safe import and real TypeScript `nodenext`/`bundler` consumers pass                                     |
 | Package structure         | publint: all good; Are the Types Wrong: no problems in the checked resolution modes                                                                                              |
-| Browser suite             | **39 passed**, zero skipped, unexpected or flaky cases; Chromium, Firefox and WebKit                                                                                             |
+| Browser suite             | **42 passed**, zero skipped, unexpected or flaky cases; Chromium, Firefox and WebKit                                                                                             |
 | Interactive self-tests    | Eight real checks per browser: SHA-256, canonical order, context, explicit identification data, empty selection, timeout, storage preservation and immediate repeatability       |
 | Dependency audit          | `npm audit`: **0 known vulnerabilities** in the final lockfile on this date                                                                                                      |
 | Workflow syntax           | actionlint **1.7.12** passes; shellcheck integration was unavailable and disabled for this local invocation                                                                      |
@@ -19,7 +19,7 @@ Observed locally on **9 November 2026**, macOS ARM, Node **26.13.0**, npm **11.2
 
 ## What the browser cases establish
 
-The suite serves `docs/` using a fresh copy of the current local SDK build. It verifies real SHA-256 against independent Node digests, canonical identification inputs, preserved UUIDs/context, repeatability within a short run, finite empty results, storage preservation, bounded pending collectors, lack of third-party HTTP requests in the default page/collection, interactive controls, an allow-listed diagnostic export, keyboard navigation, mobile layout, cancellation and safe rendering of markup-shaped observations.
+The suite serves `docs/` using a fresh copy of the current local SDK build. It verifies real SHA-256 against independent Node digests, canonical identification inputs, preserved UUIDs/context, repeatability within a short run, finite empty results, storage preservation, bounded pending collectors, synchronous work returned after its deadline, lack of third-party HTTP requests in the default page/collection, interactive controls, an allow-listed diagnostic export, keyboard navigation, mobile layout, cancellation and safe rendering of markup-shaped observations.
 
 Cancellation uses a deliberately pending Permissions API fixture, and HTML rendering uses a controlled user-agent string. These are labeled test inputs, not claims about a real malicious browser. WebRTC policy is also covered by unit tests: ordinary HTTP request observation alone cannot detect STUN/UDP traffic.
 

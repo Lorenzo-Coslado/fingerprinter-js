@@ -127,6 +127,95 @@ describe('public selection and results', () => {
 });
 
 describe('deadlines, cancellation and lifecycle', () => {
+  it.each(['collect', 'validation', 'snapshot', 'project', 'projection snapshot'] as const)(
+    'rejects synchronous work exceeding its local deadline during %s before timers run',
+    async (phase) => {
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+      let clock = 0;
+      vi.spyOn(performance, 'now').mockImplementation(() => clock);
+      const lateValue = (): Record<string, unknown> => ({
+        get stable() {
+          clock = 30;
+          return 'late';
+        },
+      });
+      const late = collector('late', () => {
+        if (phase === 'collect') clock = 30;
+        if (phase === 'snapshot') return lateValue();
+        if (phase === 'validation') {
+          return Object.defineProperty({ stable: 'late' }, 'error', {
+            get() {
+              clock = 30;
+              return undefined;
+            },
+          });
+        }
+        return { stable: 'late' };
+      });
+      late.project = (value) => {
+        if (phase === 'project') clock = 30;
+        return phase === 'projection snapshot' ? lateValue() : value;
+      };
+      const release = vi.fn();
+      const healthy = collector('healthy', (context) => {
+        context?.onCleanup(release);
+        return 'healthy';
+      });
+      const result = await generate({
+        timeout: 1,
+        timeBudget: 500,
+        parallel: false,
+        customCollectors: [late, healthy],
+      });
+
+      // No timer advancement: elapsed synchronous work must be checked using the clock.
+      expect(clock).toBe(30);
+      expect(result.collectorResults.late.status).toBe('timeout');
+      expect(result.collectorResults.late).not.toHaveProperty('value');
+      expect(result.components).not.toHaveProperty('late');
+      expect(result.hashComponents).not.toContain('late');
+      expect(result.collectorResults.healthy.status).toBe('ok');
+      expect(result.collectionCoverage).toBe(50);
+      expect(release).toHaveBeenCalledOnce();
+      expect(vi.getTimerCount()).toBe(0);
+    },
+  );
+  it('keeps cancellation authoritative when a synchronous projection also exceeds its deadline', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    let clock = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => clock);
+    const controller = new AbortController();
+    const cancelled = collector('cancelled', () => 'observation');
+    cancelled.project = (value) => {
+      clock = 30;
+      controller.abort();
+      return value;
+    };
+    const result = await generate({
+      timeout: 1,
+      timeBudget: 500,
+      signal: controller.signal,
+      customCollectors: [cancelled],
+    });
+    expect(result.collectorResults.cancelled.status).toBe('aborted');
+    expect(result.components).not.toHaveProperty('cancelled');
+    expect(result.hashComponents).not.toContain('cancelled');
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('does not commit an observation or projection when a projection throws', async () => {
+    const failed = collector('failed', () => ({ stable: 'observation' }));
+    failed.project = () => {
+      throw new Error('Projection failed');
+    };
+    const result = await generate({ customCollectors: [failed] });
+    expect(result.collectorResults.failed).toMatchObject({
+      status: 'error',
+      reason: 'Projection failed',
+    });
+    expect(result.collectorResults.failed).not.toHaveProperty('value');
+    expect(result.components).not.toHaveProperty('failed');
+    expect(result.hashComponents).not.toContain('failed');
+  });
   it('bounds a never-settling collector and releases registered resources', async () => {
     vi.useFakeTimers();
     const release = vi.fn();

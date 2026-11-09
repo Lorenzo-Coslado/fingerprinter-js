@@ -164,3 +164,38 @@ test('does not make third-party HTTP requests on load or default generation', as
   });
   expect(external).toEqual([]);
 });
+
+test('rejects synchronous observations returned after their local deadline', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const url = '/sdk/index.js';
+    const { Fingerprint } = await import(url);
+    const observation = await Fingerprint.generate({
+      collectors: [],
+      timeout: 10,
+      timeBudget: 500,
+      customCollectors: [
+        {
+          name: 'synchronous',
+          metadata: { name: 'synchronous', category: 'browser', stable: true },
+          isSupported: () => true,
+          collect: () => {
+            const until = performance.now() + 30;
+            while (performance.now() < until) {
+              /* The browser cannot preempt synchronous work. */
+            }
+            return 'late';
+          },
+          project: (value: string) => value,
+        },
+      ],
+    });
+    return {
+      status: observation.collectorResults.synchronous.status,
+      hashInputs: observation.hashComponents,
+      coverage: observation.collectionCoverage,
+    };
+  });
+  expect(result.status).toBe('timeout');
+  expect(result.hashInputs).toEqual([]);
+  expect(result.coverage).toBe(0);
+});
