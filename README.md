@@ -1,3 +1,5 @@
+<img src="docs/assets/favicon.svg" alt="FingerprinterJS logo" width="80" height="80" />
+
 # FingerprinterJS — Browser fingerprinting
 
 [![npm version](https://img.shields.io/npm/v/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
