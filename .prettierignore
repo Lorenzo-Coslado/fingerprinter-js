@@ -1,0 +1,12 @@
+node_modules/
+.cache/
+dist/
+docs/sdk/
+coverage/
+playwright-report/
+test-results/
+.impeccable/review/
+docs/audit-2026-11-09/
+docs/AUDIT-2026-11-09.md
+package-lock.json
+CODE_OF_CONDUCT.md

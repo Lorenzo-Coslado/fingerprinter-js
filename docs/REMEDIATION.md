@@ -1,0 +1,35 @@
+# v2 audit remediation
+
+The [historical audit](AUDIT-2026-11-09.md) describes commit `a9ba5f0` and npm 2.0.1. This source change targets **v3.0.0** because identification inputs, hashing and collection defaults change. Read [migration](MIGRATION.md) before adopting it.
+
+| Finding                              | Implemented change                                                                                                                           | Regression evidence                                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| F01 — deadlines and execution        | One orchestration engine; per-collector deadlines, shared serial/parallel collection budget, AbortSignal, observable partial results         | Never-settling collector, serial budget, pre-abort and cleanup tests; browser timeout/cancel scenarios |
+| F02 — storage deletion               | Per-invocation unused probe keys; remove only the invocation's own write                                                                     | Pre-existing local/session values, occupied key, failure and browser preservation tests                |
+| F03 — unstable identification        | Registry defines conservative field-specific schema 3 projections; diagnostic fields remain outside the hash                                 | Screen/Client Hints version and quota/device changes; checked-in projection fixtures                   |
+| F04 — canonical serialization        | Recursively sorted object keys, meaningful array order, shared-reference support and explicit invalid JSON errors                            | Reordered nested inputs, shared references, cycles, unsupported input and browser controls             |
+| F05 — context data                   | Preserve customData outside the hash; explicit fingerprintData and namespace; no guessed UUID filtering                                      | UUID distinctions, unchanged hash for changed request context and canonical input tests                |
+| F06 — weak hash fallback             | Native or software SHA-256 with the same output, never the legacy integer helper                                                             | Independent known vectors, Unicode/long input, absent/rejected Web Crypto, constant-hash mutation      |
+| F07 — misleading metrics             | collectionCoverage and collector states; deprecated confidence alias; entropy null; explicit empty quality                                   | Unsupported/failed/empty/redacted result tests and page labels                                         |
+| F08 — biased/correlated rules        | Pure versioned analysis; one automation evidence group; no locale/privacy/success suspicion                                                  | Legitimate and malformed snapshots, missing input, deduplication, replay without globals               |
+| F09 — weak tests                     | Real encoding/digests, positive and negative identity controls, schema fixtures and mutation harness                                         | Constant 64-zero hash must fail assertions in utilities and the engine                                 |
+| F10 — package exports                | Real ESM/CJS collector and utility entries, bundled d.ts/d.cts, legacy type mappings                                                         | Installed tarball consumers, SSR import, publint and Are the Types Wrong                               |
+| F11 — publication                    | One npm archive, tag/version validation, OIDC/provenance workflow; validation-only legacy script                                             | Local release checks and actionlint; account setup described in RELEASING                              |
+| F12 — quality gates                  | Flat ESLint, Prettier, library/test/example typechecking, PR CI and browser job                                                              | `npm run check`, Node matrix in GitHub Actions, separate browser suite                                 |
+| F13 — resources and cost             | Cleanup on every completion path; timers cancelled; offline audio; fonts batched; WebGL/RTC closed                                           | Collector cleanup/cancellation/error tests plus real browser profiles                                  |
+| F14 — network and collection effects | No telemetry/default network collector; WebRTC requires explicit selection and network opt-in; no imposed STUN                               | Network-gating tests, browser third-party HTTP check, allow-listed demo export and PRIVACY             |
+| F15 — public contracts               | Typed states/components, custom projections and lifecycle, registry descriptors, comparison helpers, reduced output                          | Typechecked extensions, package consumers and public API tests                                         |
+| F16 — inconsistent maintenance       | Single version source; new README, changelog, migration/security/contribution/release guides; maintained locked tools and dependency updates | Version fixture, release metadata check, dependency audit and documentation checks                     |
+| F17 — HTML interpolation             | Render observations through DOM text, not HTML interpolation                                                                                 | Browser test with a markup-shaped user agent, empty injected-element result                            |
+
+## Scope and compatibility
+
+The [ecosystem review](ECOSYSTEM.md) uses primary documentation and concrete public integration reports. It guides package/API/diagnostic expectations, without asserting compliance with an invented industry certification or parity with a hosted identification service.
+
+Passing implementation tests does not establish population uniqueness, longitudinal stability, fraud accuracy or deployment-specific legal compliance. Those require representative evidence and integration decisions beyond this source refactor. The v3 documentation removes the corresponding unsupported claims.
+
+The default browser suite covers current Chromium, Firefox and WebKit. Real mobile hardware, corporate policy combinations, legacy browsers and a longitudinal panel remain future validation work. Optional capabilities degrade through explicit states rather than generating a synthetic successful observation.
+
+The npm trusted publisher and GitHub Pages Actions source are external settings, documented in [RELEASING](RELEASING.md). Source changes alone do not configure npm authentication or publish a package. No npm release is performed by merging this branch; publishing requires a matching versioned GitHub release.
+
+See [validation evidence](VALIDATION.md) for the observed checks and their limits.

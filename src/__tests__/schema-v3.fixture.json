@@ -1,0 +1,23 @@
+{
+  "fingerprintVersion": "3",
+  "options": {
+    "collectors": [],
+    "fingerprintData": {
+      "userId": "fixture"
+    }
+  },
+  "canonical": "{\"components\":{},\"data\":{\"userId\":\"fixture\"},\"namespace\":\"fingerprinter-js\",\"schema\":\"3\"}",
+  "expected": "035fdd78e1a4340b2104619af4bc78384af0fb72d8fbfed53c4d25b2d447eebe",
+  "screenProjection": {
+    "screen": {
+      "width": 1440,
+      "height": 900,
+      "availWidth": 1400,
+      "availHeight": 860,
+      "colorDepth": 24,
+      "pixelDepth": 24
+    },
+    "canonical": "{\"components\":{\"screen\":{\"colorDepth\":24,\"pixelDepth\":24}},\"namespace\":\"fingerprinter-js\",\"schema\":\"3\"}",
+    "expected": "fbfab84897912ff11dafc0fb2f915fe3d25b76379d57e2ebeb6d1587da11d4ac"
+  }
+}

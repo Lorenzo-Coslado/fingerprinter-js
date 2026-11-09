@@ -1,61 +1,33 @@
-/**
- * Connection Collector
- * Collects network connection information
- */
-
-import { CollectorMetadata, ConnectionData } from "../types";
-import { BaseCollector } from "./base";
+import type { ConnectionData } from '../types';
+import { BaseCollector } from './base';
 
 interface NetworkInformation {
-  effectiveType: string;
-  downlink: number;
-  rtt: number;
-  saveData: boolean;
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
   type?: string;
 }
-
-/**
- * Connection Collector
- * Uses Network Information API
- */
+type ConnectionNavigator = Navigator & { connection?: NetworkInformation };
 export class ConnectionCollector extends BaseCollector<ConnectionData> {
-  readonly name = "connection";
-  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
-    "connection",
-    {
-      weight: 4,
-      entropy: 4,
-      stable: false, // Connection can change
-      category: "network",
-    }
-  );
-
+  readonly name = 'connection';
+  readonly metadata = BaseCollector.createMetadata(this.name, {
+    category: 'network',
+    stable: false,
+  });
   isSupported(): boolean {
-    return (
-      super.isSupported() &&
-      "connection" in navigator
-    );
+    return super.isSupported() && !!(navigator as ConnectionNavigator).connection;
   }
-
   collect(): ConnectionData {
-    if (!this.isSupported()) {
-      return { supported: false };
-    }
-
-    return this.safeCollect<ConnectionData>(
-      (): ConnectionData => {
-        const connection = (navigator as any).connection as NetworkInformation;
-
-        return {
-          supported: true,
-          effectiveType: connection.effectiveType,
-          downlink: connection.downlink,
-          rtt: connection.rtt,
-          saveData: connection.saveData,
-          type: connection.type,
-        };
-      },
-      { supported: false }
-    );
+    this.requireSupported();
+    const connection = (navigator as ConnectionNavigator).connection;
+    return {
+      supported: true,
+      effectiveType: connection?.effectiveType,
+      downlink: connection?.downlink,
+      rtt: connection?.rtt,
+      saveData: connection?.saveData,
+      type: connection?.type,
+    };
   }
 }

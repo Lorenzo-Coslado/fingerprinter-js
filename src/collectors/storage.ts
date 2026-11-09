@@ -1,87 +1,66 @@
-/**
- * Storage Collector
- * Detects available storage mechanisms
- */
+import type { CollectorContext, StorageData } from '../types';
+import { AsyncBaseCollector, BaseCollector } from './base';
 
-import { CollectorMetadata, StorageData } from "../types";
-import { AsyncBaseCollector, BaseCollector } from "./base";
-
-/**
- * Storage Collector
- * Checks for localStorage, sessionStorage, IndexedDB, and cookies
- */
+let probeSequence = 0;
+/** Probes use a per-invocation unused key and always clean up their own write. */
 export class StorageCollector extends AsyncBaseCollector<StorageData> {
-  readonly name = "storage";
-  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
-    "storage",
-    {
-      weight: 5,
-      entropy: 4,
-      stable: true,
-      category: "storage",
-    }
-  );
+  readonly name = 'storage';
+  readonly metadata = BaseCollector.createMetadata(this.name, {
+    category: 'storage',
+    stable: false,
+  });
 
-  async collect(): Promise<StorageData> {
-    return {
-      localStorage: this.checkLocalStorage(),
-      sessionStorage: this.checkSessionStorage(),
-      indexedDB: this.checkIndexedDB(),
-      cookiesEnabled: this.checkCookies(),
-      quotaEstimate: await this.getQuotaEstimate(),
-    };
-  }
-
-  private checkLocalStorage(): boolean {
+  private probe(getStorage: () => Storage): boolean {
+    let storage: Storage | undefined;
+    let key: string | undefined;
+    let written = false;
     try {
-      const test = "__fp_test__";
-      localStorage.setItem(test, test);
-      localStorage.removeItem(test);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private checkSessionStorage(): boolean {
-    try {
-      const test = "__fp_test__";
-      sessionStorage.setItem(test, test);
-      sessionStorage.removeItem(test);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private checkIndexedDB(): boolean {
-    try {
-      return (
-        typeof indexedDB !== "undefined" &&
-        typeof indexedDB.open === "function"
-      );
-    } catch {
-      return false;
-    }
-  }
-
-  private checkCookies(): boolean {
-    try {
-      return navigator.cookieEnabled;
-    } catch {
-      return false;
-    }
-  }
-
-  private async getQuotaEstimate(): Promise<number | null> {
-    try {
-      if ("storage" in navigator && "estimate" in navigator.storage) {
-        const estimate = await navigator.storage.estimate();
-        return estimate.quota || null;
+      storage = getStorage();
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const candidate = `__fingerprinter_probe_${Date.now()}_${++probeSequence}`;
+        if (storage.getItem(candidate) === null) {
+          key = candidate;
+          break;
+        }
       }
-      return null;
+      if (!key) return false;
+      storage.setItem(key, key);
+      written = true;
+      return storage.getItem(key) === key;
     } catch {
-      return null;
+      return false;
+    } finally {
+      if (written && storage && key) {
+        try {
+          if (storage.getItem(key) === key) storage.removeItem(key);
+        } catch {
+          /* storage policy changed */
+        }
+      }
     }
+  }
+  async collect(context?: CollectorContext): Promise<StorageData> {
+    this.requireSupported(context);
+    const data: StorageData = {
+      localStorage: this.probe(() => window.localStorage),
+      sessionStorage: this.probe(() => window.sessionStorage),
+      indexedDB: typeof indexedDB !== 'undefined' && typeof indexedDB.open === 'function',
+      cookiesEnabled: navigator.cookieEnabled,
+      quotaEstimate: null,
+    };
+    if (navigator.storage?.estimate) {
+      try {
+        const estimate = await this.withTimeout(
+          navigator.storage.estimate(),
+          undefined,
+          context?.signal,
+        );
+        data.quotaEstimate = typeof estimate.quota === 'number' ? estimate.quota : null;
+      } catch (error) {
+        if (context?.signal.aborted) throw error;
+        // Availability checks remain useful if quota access is denied or unavailable.
+      }
+    }
+    return data;
   }
 }

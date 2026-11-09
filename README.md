@@ -1,199 +1,139 @@
-# FingerprinterJS v2.0
+# FingerprinterJS
 
-🔐 **Enterprise-grade browser fingerprinting** with 19 collectors, advanced bot detection, and stable hashing.
+**Browser signatures you can inspect.** Collect browser observations locally, hash an explicit stable projection, and understand the result through typed diagnostics.
 
-[![npm version](https://img.shields.io/npm/v/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
-[![npm downloads](https://img.shields.io/npm/dt/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[Interactive demo](https://lorenzo-coslado.github.io/fingerprinter-js/) · [API](docs/API.md) · [Migration from v2](docs/MIGRATION.md) · [Data collection](docs/PRIVACY.md) · [Contributing](CONTRIBUTING.md)
 
-[Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js) • [NPM Package](https://www.npmjs.com/package/fingerprinter-js)
+MIT licensed. TypeScript. No runtime dependencies, account, telemetry or network requests by default.
 
----
+> This branch contains **v3.0.0**, including breaking changes to fingerprints and defaults. Until v3 is published, npm and the live demo may still serve v2. To try this checkout, use the local demo or build a package as described below.
 
-## ✨ Features
+## Get started
 
-- **19 Collectors** - Comprehensive browser data collection
-- **Stable Hashing** - Only stable data contributes to fingerprint hash
-- **Bot Detection** - Detects Puppeteer, Playwright, Selenium, headless browsers
-- **TypeScript** - Full type safety
-- **Zero Dependencies** - Lightweight (~15KB gzipped)
-- **Parallel Collection** - Fast data gathering
+After v3 is published:
 
-## 📦 Installation
-
-```bash
+```sh
 npm install fingerprinter-js
 ```
 
-## 🚀 Quick Start
+```ts
+import { Fingerprint } from 'fingerprinter-js';
 
-```javascript
-import { Fingerprint } from "fingerprinter-js";
+// Call from a browser event or lifecycle, when collection is authorized.
+const result = await Fingerprint.generate();
 
-const result = await Fingerprint.generate({
-  includeSuspectAnalysis: true
-});
-
-console.log(result.fingerprint);  // "a1b2c3d4..."
-console.log(result.confidence);   // 100
-console.log(result.entropy);      // 85
-console.log(result.suspectAnalysis?.riskLevel); // "LOW"
+console.log(result.fingerprint); // SHA-256 browser environment signature
+console.log(result.fingerprintVersion); // '3' — the identification schema
+console.log(result.collectionCoverage); // successful / selected collectors, 0–100
+console.log(result.collectorResults); // states, durations and observations
 ```
 
-## 📊 Result Structure
+Importing the package is safe during server rendering. **Collect in the browser.** A signature can change when the environment, selected collectors or available observations change. Different environments can share it. It does not authenticate a device or establish that a visitor is human.
 
-```typescript
-interface FingerprintResult {
-  fingerprint: string;        // SHA-256 hash (stable collectors only)
-  components: Record<string, unknown>; // All collected data
-  confidence: number;         // 0-100%
-  entropy: number;            // Bits of entropy
-  duration: number;           // Generation time (ms)
-  version: string;            // "2.0.0"
-  suspectAnalysis?: {
-    score: number;            // 0-100 (higher = more suspicious)
-    riskLevel: "LOW" | "MEDIUM" | "HIGH";
-    signals: SuspectSignal[];
-  };
+## How it works
+
+![Selected observations pass through a versioned stable projection and canonical SHA-256 hashing, then return a signature with diagnostics.](docs/assets/pipeline.svg)
+
+Only successful, explicitly selected identification fields enter the hash. Resolution, zoom, browser version strings, storage quota, battery, connection, permission states and device counts stay outside it. The [complete projection table](docs/API.md#profiles-and-schema-3) describes schema 3.
+
+The package version and fingerprint schema are separate. Store `fingerprintVersion` with the hash, and read the [migration guide](docs/MIGRATION.md) before upgrading.
+
+## Choose the collection you need
+
+| Profile              | Purpose                                  | Selection                                                           |
+| -------------------- | ---------------------------------------- | ------------------------------------------------------------------- |
+| `minimal`            | Small configuration signature            | Language, timezone, hardware, touch, math                           |
+| `balanced` — default | Rendering and configuration observations | Minimal plus user agent, screen, canvas, WebGL, fonts, Client Hints |
+| `diagnostic`         | Inspect optional browser capabilities    | All built-ins except WebRTC                                         |
+
+More observations do not imply a measured accuracy improvement. Choose a profile for its purpose, cost and data effects. Use an exact list when you need tighter control:
+
+```ts
+const result = await Fingerprint.generate({
+  collectors: ['language', 'timezone', 'canvas'],
+  timeout: 500, // each collector
+  timeBudget: 800, // shared collection budget
+  includeComponents: false,
+});
+```
+
+`includeComponents: false` omits raw observations from both result locations, while retaining statuses and timing. It reduces the returned data, not the collection itself. Default profiles make no network requests. WebRTC requires explicit selection and `network: 'enabled'`; no public STUN server is hardcoded.
+
+## Handle partial results
+
+```ts
+const controller = new AbortController();
+const agent = new Fingerprint({ profile: 'balanced', timeBudget: 1_000 });
+const result = await agent.generate({ signal: controller.signal });
+
+for (const [name, collection] of Object.entries(result.collectorResults)) {
+  if (collection.status !== 'ok' && collection.status !== 'excluded') {
+    console.log(name, collection.status, collection.reason);
+  }
 }
 ```
 
-## 🎯 Collectors
+States distinguish `ok`, `unsupported`, `blocked`, `timeout`, `error`, `excluded` and `aborted`. Cancellation returns partial results and releases registered resources. Empty selections have zero coverage and `quality: 'empty'`; their deterministic hash is not a usable unique identifier.
 
-### Stable Collectors (included in hash)
+**Coverage is availability, not identity accuracy.** `confidence` remains a deprecated alias for coverage. `entropy` is `null`: this library does not estimate population entropy or publish an unmeasured precision percentage.
 
-| Collector | Description | Entropy |
-|-----------|-------------|---------|
-| `userAgent` | Browser User-Agent | ~8 bits |
-| `language` | Preferred languages | ~3 bits |
-| `timezone` | Timezone offset & name | ~4 bits |
-| `screen` | Resolution, color depth | ~6 bits |
-| `plugins` | Installed plugins | ~5 bits |
-| `canvas` | 2D canvas fingerprint | ~10 bits |
-| `webgl` | GPU vendor & renderer | ~9 bits |
-| `fonts` | Available system fonts | ~8 bits |
-| `hardware` | CPU cores, memory, platform | ~5 bits |
-| `clientHints` | UA Client Hints API | ~7 bits |
-| `storage` | Storage API availability | ~4 bits |
-| `touch` | Touch capabilities | ~4 bits |
-| `math` | Math precision values | ~2 bits |
-| `mediaDevices` | Cameras/mics count | ~5 bits |
+## Keep request context outside identification
 
-### Unstable Collectors (data collected but NOT in hash)
-
-| Collector | Description | Why Unstable |
-|-----------|-------------|--------------|
-| `webrtc` | Local IPs, SDP | IPs can change |
-| `battery` | Battery level & charging | Values fluctuate |
-| `connection` | Network type & speed | Variables change |
-| `permissions` | Permission states | User can change |
-| `audio` | Audio processing fingerprint | Varies on first run |
-
-> ⚠️ Unstable collectors provide useful data for analysis but don't affect the fingerprint hash, ensuring consistent identification.
-
-## 🛡️ Bot Detection
-
-```javascript
+```ts
 const result = await Fingerprint.generate({
-  includeSuspectAnalysis: true
+  customData: { requestId: 'request-123', timestamp: Date.now() },
 });
-
-if (result.suspectAnalysis?.riskLevel === "HIGH") {
-  console.log("Bot detected:", result.suspectAnalysis.signals);
-}
+// Context is preserved in components.custom and does not affect the hash.
 ```
 
-### Detection Capabilities
+If application data must explicitly contribute, use `fingerprintData` and optionally a public `namespace`. UUIDs are preserved, object keys are sorted recursively and array order is retained. Unsupported JSON data is rejected explicitly. See [API contracts](docs/API.md).
 
-- **Automation Tools**: Puppeteer, Playwright, Selenium, PhantomJS
-- **Headless Browsers**: HeadlessChrome, CDP artifacts
-- **Inconsistencies**: UA/platform mismatch, hardware anomalies
-- **Privacy Tools**: Canvas noise, property tampering
-- **Known Bots**: Googlebot, Bingbot, crawlers
+## Explain changes and automation indicators
 
-## 🔧 Configuration Options
+```ts
+import { compareFingerprints, SuspectAnalyzer } from 'fingerprinter-js';
 
-```javascript
-const result = await Fingerprint.generate({
-  // Exclude specific collectors
-  excludeCanvas: false,
-  excludeWebGL: false,
-  excludeAudio: false,
-  excludeFonts: false,
-  excludeWebRTC: false,
-  excludeHardware: false,
-  excludeClientHints: false,
-  excludeStorage: false,
-  excludeBattery: false,
-  excludeConnection: false,
-  excludeTouch: false,
-  excludePermissions: false,
-  excludeMath: false,
-  excludeMediaDevices: false,
-  
-  // Bot detection
-  includeSuspectAnalysis: true,
-  
-  // Custom data (optional)
-  customData: {
-    userId: "12345"
-  },
-  
-  // Allow unstable custom data
-  allowUnstableData: false,
-  
-  // Timeout per collector (ms)
-  timeout: 5000
-});
+const comparison = compareFingerprints(previous, current);
+console.log(comparison.sameVersion, comparison.changes);
+
+const result = await Fingerprint.generate({ includeSuspectAnalysis: true });
+const replay = SuspectAnalyzer.analyze(result.components);
 ```
 
-## 📱 Browser Support
+Comparison shows changes in available observations; not every observation enters the hash. The analysis replays a versioned snapshot of explicit automation and declared crawler indicators. Its score is a heuristic weight, **not a fraud probability**. Missing APIs, privacy defenses, international language choices and successful collection are not bot evidence.
 
-| Browser | Version |
-|---------|---------|
-| Chrome | 60+ |
-| Firefox | 55+ |
-| Safari | 12+ |
-| Edge | 79+ |
+Browser data can be forged or omitted. Use these observations alongside trusted application signals, never as authentication or the sole basis for blocking a person. Read the [security policy](SECURITY.md) and [ecosystem decisions](docs/ECOSYSTEM.md).
 
-> ⚠️ This library is browser-only. Node.js is not supported.
+## Try it and run the tests
 
-## 🔄 Stability Guarantee
-
-The fingerprint hash is **stable across page reloads** because:
-
-1. Only **stable collectors** contribute to the hash
-2. Temporal values (timestamps, UUIDs) are automatically filtered from custom data
-3. Unstable platform data (battery level, network speed) is collected but excluded from hash
-
-```javascript
-// This will produce the same hash every time
-const result1 = await Fingerprint.generate();
-const result2 = await Fingerprint.generate();
-console.log(result1.fingerprint === result2.fingerprint); // true
+```sh
+git clone https://github.com/Lorenzo-Coslado/fingerprinter-js.git
+cd fingerprinter-js
+npm ci
+npm run demo
 ```
 
-## 🧩 Individual Collectors
+Open `http://127.0.0.1:4173`. The demo uses the current local SDK, starts collection only when requested and includes profile controls, component inspection, repeatability checks, safe diagnostic export and in-browser self-tests.
 
-```javascript
-import { 
-  CanvasCollector, 
-  WebGLCollector,
-  FontsCollector 
-} from "fingerprinter-js";
-
-// Use collectors individually
-const canvas = new CanvasCollector();
-const data = canvas.collect();
-console.log(data);
+```sh
+npm run check              # lint, types, unit tests, build and packed consumers
+npm run test:coverage
+npm run test:mutation      # prove that a constant hash makes regression tests fail
+npx playwright install chromium firefox webkit
+npm run build:demo
+npm run test:browser       # SDK + demo, three browser engines
 ```
 
-## 📄 License
+To install this checkout in another application, run `npm run build && npm pack --ignore-scripts`, then install the generated `.tgz`. Every public entry is checked from that archive through ESM, CommonJS and TypeScript consumer projects. CI runs on pull requests; the Pages workflow builds the demo with the same source SDK. [Release setup](docs/RELEASING.md) documents the required npm/GitHub settings.
 
-MIT © [Lorenzo Coslado](https://github.com/Lorenzo-Coslado)
+## Compatibility and scope
 
-## 🔗 Links
+The browser target is ES2020 with modern browser APIs, feature detection and explicit degradation. The repository's browser suite targets current Chromium, Firefox and WebKit. WebKit testing is not a certification of every Safari/iOS release; mobile hardware and older browser versions require validation in the target integration.
 
-- [GitHub Repository](https://github.com/Lorenzo-Coslado/fingerprinter-js)
-- [NPM Package](https://www.npmjs.com/package/fingerprinter-js)
-- [Live Demo](https://lorenzo-coslado.github.io/fingerprinter-js)
+Development tools require Node 22.22.2+, 24.15+ or 26+. The SDK's browser runtime has no npm dependencies. Network collectors, optional high-entropy browser APIs and raw diagnostics deserve separate review for each deployment. [Privacy and collection effects](docs/PRIVACY.md) explains purpose, minimization and integration responsibilities.
+
+For custom collectors, direct collector imports, sequential collection and the complete typed result, see [API](docs/API.md). For fixes and compatibility changes, see [CHANGELOG](CHANGELOG.md).
+
+## License
+
+[MIT](LICENSE) © Lorenzo Coslado. Contributions and reproducible bug reports are welcome through the [contribution guide](CONTRIBUTING.md).

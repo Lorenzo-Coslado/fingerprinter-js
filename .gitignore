@@ -58,13 +58,13 @@ PUBLISHING-DUAL.md
 # NPM configuration examples
 .npmrc.example
 
-# Package manager files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
 # TypeScript
 *.tsbuildinfo
 
 # Rollup cache
 .rollup.cache/
+docs/sdk/
+playwright-report/
+test-results/
+*.tgz
+.impeccable/review/

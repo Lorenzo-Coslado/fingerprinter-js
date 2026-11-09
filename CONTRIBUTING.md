@@ -1,328 +1,57 @@
-# Contributing to Fingerprinter.js
+# Contributing
 
-Thank you for your interest in contributing to Fingerprinter.js! This document provides guidelines and information for contributors.
+Use a supported Node.js LTS runtime: 22.22.2+, 24.15+ or 26+. The browser SDK has no runtime dependencies; these requirements describe its development tools.
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 14+
-- npm 6+
-- Git
-
-### Setup Development Environment
-
-1. Fork the repository
-2. Clone your fork:
-
-```bash
-git clone https://github.com/Lorenzo-Coslado/fingerprinter-js.git
-cd fingerprinter-js
+```sh
+npm ci
+npm run check
+npm run demo
 ```
 
-3. Install dependencies:
+The demo runs at `http://127.0.0.1:4173`, uses the local build and starts no collection until an explicit action. The browser console and the page's self-tests can help reproduce a bug. Do not post unredacted browser observations from real visitors in a public issue.
 
-```bash
-npm install
+## Project structure
+
+| Location                  | Purpose                                                                   |
+| ------------------------- | ------------------------------------------------------------------------- |
+| `src/fingerprint.ts`      | Collection orchestration, projection and versioned fingerprint generation |
+| `src/collectors/`         | Browser observations and their capability/cleanup contracts               |
+| `src/utils.ts`            | Canonical serialization, hashing and comparisons                          |
+| `src/suspect-analyzer.ts` | Pure, replayable heuristic analysis of an explicit snapshot               |
+| `src/__tests__/`          | Unit and regression tests using real hash functions                       |
+| `tests/browser/`          | SDK and demo tests in Chromium, Firefox and WebKit                        |
+| `scripts/`                | Reproducible build, package checks and local preview                      |
+| `docs/`                   | Demo, API, migration, data collection and release guides                  |
+
+## Validation
+
+```sh
+npm test                          # deterministic unit/regression tests
+npm run test:coverage             # coverage report; inspect missing contracts
+npm run typecheck                # includes test code
+npm run build:demo
+npx playwright install chromium firefox webkit
+npm run test:browser
 ```
 
-4. Run tests to ensure everything works:
+`npm run check` runs the core validation chain, including formatting and installing the generated archive into isolated consumers. `npm run format` applies the repository's Prettier style. `npm run test:package` checks every public entry, CJS/ESM/UMD behavior, safe SSR imports and TypeScript module resolution. Browser tests also run in CI. Changes to browser collectors or the demo should run both chains.
 
-```bash
-npm test
-```
+## Code and API expectations
 
-## 🛠️ Development Workflow
+Keep TypeScript strict and types useful at the consumer boundary. Use the flat ESLint configuration and Prettier settings as the executable style standard. Prefer a small tested interface over a new abstraction with one use. Public behavior and collection effects belong in the docs.
 
-### Project Structure
+The development graph currently overrides `minimatch` to the patched 11.x line for [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249). ESLint/config-array and typescript-estree use the retained matching API; lint, type and package checks validate this combination. Reassess/remove this override when their dependency ranges include a patched version. TypeScript stays on 6.0.x because the selected typescript-eslint release supports versions below 6.1; upgrading the compiler requires checking the toolchain together.
 
-```
-src/
-├── collectors/          # Data collection modules
-│   ├── basic.ts        # Basic collectors (userAgent, language, etc.)
-│   ├── canvas.ts       # Canvas and WebGL collectors
-│   └── advanced.ts     # Audio and font collectors
-├── __tests__/          # Test files
-├── types.ts           # TypeScript interfaces
-├── utils.ts           # Utility functions
-├── fingerprint.ts     # Main fingerprint class
-├── suspect-analyzer.ts # Suspect analysis functionality
-└── index.ts           # Main export file
-```
+For a collector change, define its supported/blocked/error outcomes, timeout and cancellation behavior, resource cleanup and exact stable projection. A collector being available is not evidence its data is stable. Do not add network effects or permanent state to default profiles.
 
-### Available Scripts
+For hashing, test known SHA-256 vectors, equivalence after canonical normalization and a positive control where changed identification data changes the result. Do not mock a digest or encoder to a constant. Preserve historical fixtures when revising the schema, and document which IDs become incompatible.
 
-- `npm run build` - Build the library
-- `npm run dev` - Build in watch mode
-- `npm test` - Run tests
-- `npm test:watch` - Run tests in watch mode
-- `npm run lint` - Lint the code
-- `npm run lint:fix` - Fix linting issues
+For an analysis rule, supply replayable snapshots showing both the intended indicator and legitimate nearby cases. Missing APIs, exclusion, international language choices and privacy protection are not fraud evidence. A score is not a measured probability.
 
-### Making Changes
+For UI changes, preserve keyboard access, meaningful labels, visible focus, small-screen layout and reduced-motion behavior. Use `textContent` for observations and treat third-party/custom values as data.
 
-1. Create a feature branch:
+## Pull requests and security
 
-```bash
-git checkout -b feature/your-feature-name
-```
+Explain the concrete problem, resulting behavior and validation. Include migration notes for public API or fingerprint changes. Small focused follow-up PRs are easier to review than unrelated maintenance mixed into a feature.
 
-2. Make your changes
-3. Add tests for new functionality
-4. Ensure all tests pass:
-
-```bash
-npm test
-```
-
-5. Lint your code:
-
-```bash
-npm run lint:fix
-```
-
-6. Build the project:
-
-```bash
-npm run build
-```
-
-## 📝 Coding Standards
-
-### TypeScript Guidelines
-
-- Use strict TypeScript configuration
-- Provide proper type definitions
-- Document public APIs with JSDoc comments
-- Follow existing code style
-
-### Code Style
-
-- Use 2 spaces for indentation
-- Use single quotes for strings
-- Add trailing commas in multiline objects/arrays
-- Keep lines under 100 characters when possible
-
-### Example Code Style
-
-```typescript
-/**
- * Example collector implementation
- */
-export class ExampleCollector implements ComponentCollector {
-  readonly name = "example";
-
-  async collect(): Promise<any> {
-    try {
-      // Implementation here
-      return {
-        property: "value",
-        timestamp: Date.now(),
-      };
-    } catch (error) {
-      return { error: (error as Error).message };
-    }
-  }
-}
-```
-
-## 🧪 Testing
-
-### Writing Tests
-
-- Place tests in `src/__tests__/` directory
-- Use Jest testing framework
-- Test both success and error cases
-- Mock browser APIs when necessary
-
-### Test Example
-
-```typescript
-describe("ExampleCollector", () => {
-  it("should collect example data", async () => {
-    const collector = new ExampleCollector();
-    const result = await collector.collect();
-
-    expect(result).toHaveProperty("property");
-    expect(result.property).toBe("value");
-  });
-
-  it("should handle errors gracefully", async () => {
-    // Test error handling
-  });
-});
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run specific test file
-npx jest fingerprint.test.ts
-```
-
-## 🐛 Bug Reports
-
-When reporting bugs, please include:
-
-1. **Description**: Clear description of the issue
-2. **Steps to reproduce**: Minimal steps to reproduce the bug
-3. **Expected behavior**: What should happen
-4. **Actual behavior**: What actually happens
-5. **Environment**: Browser, version, OS
-6. **Code example**: Minimal code that demonstrates the issue
-
-### Bug Report Template
-
-````markdown
-**Bug Description**
-A clear description of the bug.
-
-**To Reproduce**
-Steps to reproduce:
-
-1. Create fingerprint with options: `{ excludeCanvas: true }`
-2. Call `generate()`
-3. See error
-
-**Expected Behavior**
-Fingerprint should generate successfully.
-
-**Actual Behavior**
-Error thrown: "Canvas is required"
-
-**Environment**
-
-- Browser: Chrome 91
-- OS: macOS 11.4
-- Package version: 1.0.0
-
-**Code Example**
-
-```javascript
-const fp = new Fingerprint({ excludeCanvas: true });
-const result = await fp.generate(); // Error occurs here
-```
-````
-
-## 💡 Feature Requests
-
-For new features:
-
-1. Check existing issues first
-2. Describe the use case clearly
-3. Explain why it would be beneficial
-4. Provide implementation ideas if possible
-
-## 🔒 Security Issues
-
-For security-related issues:
-
-1. **DO NOT** open public issues
-2. Email security concerns to: [your-email@domain.com]
-3. Include detailed description and steps to reproduce
-4. We'll respond within 48 hours
-
-## 📋 Pull Request Process
-
-### Before Submitting
-
-1. Ensure your code follows the coding standards
-2. Add or update tests as needed
-3. Update documentation if necessary
-4. Verify all tests pass
-5. Check that the build succeeds
-
-### Pull Request Guidelines
-
-1. **Title**: Clear, descriptive title
-2. **Description**: Explain what changes were made and why
-3. **Testing**: Describe how the changes were tested
-4. **Breaking Changes**: Note any breaking changes
-5. **Issue Link**: Link to related issues
-
-### Pull Request Template
-
-```markdown
-## Description
-
-Brief description of changes made.
-
-## Type of Change
-
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-
-Describe how this was tested:
-
-- [ ] Unit tests added/updated
-- [ ] Manual testing performed
-- [ ] All existing tests pass
-
-## Checklist
-
-- [ ] Code follows project style guidelines
-- [ ] Self-review completed
-- [ ] Documentation updated
-- [ ] Tests added for new functionality
-```
-
-## 🎯 Areas for Contribution
-
-We especially welcome contributions in these areas:
-
-### New Collectors
-
-- Additional browser APIs
-- Mobile-specific detection
-- Performance optimizations
-
-### Suspect Analysis
-
-- New bot detection techniques
-- Machine learning integration
-- Improved accuracy
-
-### Documentation
-
-- Usage examples
-- API documentation
-- Performance guides
-
-### Testing
-
-- Cross-browser testing
-- Edge case coverage
-- Performance benchmarks
-
-## 📚 Resources
-
-- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
-- [Jest Testing Framework](https://jestjs.io/docs/getting-started)
-- [Rollup Bundler](https://rollupjs.org/guide/en/)
-
-## 🤝 Community
-
-- **Issues**: Use GitHub issues for bugs and features
-- **Discussions**: Use GitHub discussions for questions
-- **Code of Conduct**: Be respectful and constructive
-
-## ❓ Questions
-
-If you have questions about contributing:
-
-1. Check existing documentation
-2. Search closed issues and discussions
-3. Open a new discussion
-4. Ask in the issue comments
-
-Thank you for contributing to Fingerprinter.js! 🎉
+Report vulnerabilities privately through [GitHub Security Advisories](https://github.com/Lorenzo-Coslado/fingerprinter-js/security/advisories/new). See [SECURITY.md](SECURITY.md) for the support and disclosure policy. For ordinary bugs, include package version, browser/OS, profile, collector statuses, reproduction and expected behavior. See [release instructions](docs/RELEASING.md) for maintainers.

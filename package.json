@@ -1,68 +1,96 @@
 {
   "name": "fingerprinter-js",
-  "version": "2.0.1",
-  "description": "Enterprise-grade browser fingerprinting with 19 collectors and advanced bot detection",
-  "main": "dist/index.js",
-  "module": "dist/index.esm.js",
-  "types": "dist/index.d.ts",
+  "version": "3.0.0",
+  "description": "Local browser fingerprints and explainable collection diagnostics. Typed, versioned, and network-free by default.",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./collectors": {
-      "import": "./dist/collectors/index.js",
-      "types": "./dist/collectors/index.d.ts"
-    }
+      "import": {
+        "types": "./dist/collectors.d.ts",
+        "default": "./dist/collectors.js"
+      },
+      "require": {
+        "types": "./dist/collectors.d.cts",
+        "default": "./dist/collectors.cjs"
+      }
+    },
+    "./utils": {
+      "import": {
+        "types": "./dist/utils.d.ts",
+        "default": "./dist/utils.js"
+      },
+      "require": {
+        "types": "./dist/utils.d.cts",
+        "default": "./dist/utils.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "sideEffects": false,
   "files": [
-    "dist/**/*",
+    "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "docs/API.md",
+    "docs/MIGRATION.md",
+    "docs/PRIVACY.md",
+    "docs/ECOSYSTEM.md",
+    "docs/RELEASING.md",
+    "docs/assets/pipeline.svg"
   ],
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "prepublishOnly": "npm run build",
-    "prepare": "npm run build",
-    "publish:both": "./scripts/publish.sh",
-    "publish:patch": "./scripts/publish.sh patch",
-    "publish:minor": "./scripts/publish.sh minor",
-    "publish:major": "./scripts/publish.sh major",
-    "demo": "npx serve demo"
+    "build": "node scripts/build.mjs",
+    "build:demo": "npm run build && node scripts/build-demo.mjs",
+    "dev": "npm run demo",
+    "demo": "npm run build:demo && node scripts/serve-demo.mjs",
+    "preview": "node scripts/serve-demo.mjs",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.tests.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:browser": "playwright test",
+    "test:package": "node scripts/check-package.mjs && publint && attw --pack",
+    "lint": "eslint src tests scripts *.mjs *.ts docs/app.js",
+    "lint:fix": "npm run lint -- --fix",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm run test:package",
+    "prepublishOnly": "npm run check",
+    "release:check": "node scripts/release-check.mjs",
+    "test:mutation": "node scripts/check-hash-mutation.mjs",
+    "format": "prettier --write . --ignore-unknown",
+    "format:check": "prettier --check . --ignore-unknown"
   },
   "keywords": [
     "fingerprinting",
     "browser-fingerprint",
+    "browser-signals",
     "device-detection",
-    "fraud-detection",
-    "bot-detection",
-    "anti-bot",
-    "security",
+    "typescript",
     "canvas-fingerprint",
     "webgl-fingerprint",
-    "audio-fingerprint",
-    "webrtc",
-    "user-tracking",
-    "browser-identification",
-    "typescript",
     "privacy",
-    "analytics",
-    "puppeteer-detection",
-    "headless-detection",
-    "automation-detection"
+    "diagnostics",
+    "bot-detection"
   ],
   "author": "Lorenzo Coslado",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Lorenzo-Coslado/fingerprinter-js.git"
+    "url": "git+https://github.com/Lorenzo-Coslado/fingerprinter-js.git"
   },
   "bugs": {
     "url": "https://github.com/Lorenzo-Coslado/fingerprinter-js/issues"
@@ -73,18 +101,45 @@
     "access": "public"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.5",
-    "@typescript-eslint/eslint-plugin": "^6.7.2",
-    "@typescript-eslint/parser": "^6.7.2",
-    "eslint": "^8.49.0",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^30.0.5",
-    "rollup": "^3.29.2",
-    "rollup-plugin-typescript2": "^0.35.0",
-    "ts-jest": "^29.1.1",
-    "typescript": "^5.2.2"
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.0",
+    "@rollup/plugin-typescript": "^12.3.1",
+    "@types/node": "^24.19.2",
+    "@vitest/coverage-v8": "5.1.0",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "jsdom": "^31.0.0",
+    "prettier": "^3.9.10",
+    "publint": "^0.3.25",
+    "rollup": "^4.68.0",
+    "rollup-plugin-dts": "^6.5.1",
+    "tslib": "^2.9.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "5.1.0"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
+  "type": "module",
+  "unpkg": "./dist/index.umd.cjs",
+  "jsdelivr": "./dist/index.umd.cjs",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/Lorenzo-Coslado"
+  },
+  "overrides": {
+    "minimatch": "^11.0.5"
+  },
+  "typesVersions": {
+    "*": {
+      "collectors": [
+        "dist/collectors.d.ts"
+      ],
+      "utils": [
+        "dist/utils.d.ts"
+      ]
+    }
   }
 }

@@ -1,101 +1,59 @@
-/**
- * Client Hints Collector
- * Collects modern User-Agent Client Hints data
- */
-
-import { ClientHintsData, CollectorMetadata } from "../types";
-import { AsyncBaseCollector, BaseCollector } from "./base";
+import type { ClientHintsData, CollectorContext } from '../types';
+import { AsyncBaseCollector, BaseCollector } from './base';
 
 interface NavigatorUAData {
   brands: Array<{ brand: string; version: string }>;
   mobile: boolean;
   platform: string;
-  getHighEntropyValues(hints: string[]): Promise<{
-    architecture?: string;
-    bitness?: string;
-    model?: string;
-    platformVersion?: string;
-    fullVersionList?: Array<{ brand: string; version: string }>;
-  }>;
+  getHighEntropyValues(hints: string[]): Promise<Partial<ClientHintsData>>;
 }
-
-/**
- * Client Hints Collector
- * Modern alternative to User-Agent parsing
- */
+type HintsNavigator = Navigator & { userAgentData?: NavigatorUAData };
 export class ClientHintsCollector extends AsyncBaseCollector<ClientHintsData> {
-  readonly name = "clientHints";
-  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
-    "clientHints",
-    {
-      weight: 7,
-      entropy: 10,
-      stable: true,
-      category: "browser",
-    }
-  );
-
+  readonly name = 'clientHints';
+  readonly metadata = BaseCollector.createMetadata(this.name, {
+    category: 'browser',
+    stable: true,
+  });
+  constructor(private readonly options: { highEntropy?: boolean } = {}) {
+    super();
+  }
   isSupported(): boolean {
-    return (
-      super.isSupported() &&
-      "userAgentData" in navigator &&
-      typeof (navigator as any).userAgentData?.getHighEntropyValues ===
-        "function"
-    );
+    return super.isSupported() && !!(navigator as HintsNavigator).userAgentData;
   }
-
-  async collect(): Promise<ClientHintsData> {
-    if (!this.isSupported()) {
-      return {
-        brands: [],
-        mobile: false,
-        platform: "unknown",
-      };
-    }
-
-    return this.withTimeout(this.collectClientHints(), {
-      brands: [],
-      mobile: false,
-      platform: "unknown",
-    });
-  }
-
-  private async collectClientHints(): Promise<ClientHintsData> {
-    try {
-      const uaData = (navigator as any).userAgentData as NavigatorUAData;
-
-      const result: ClientHintsData = {
-        brands: uaData.brands || [],
-        mobile: uaData.mobile || false,
-        platform: uaData.platform || "unknown",
-      };
-
-      // Try to get high entropy values
+  async collect(context?: CollectorContext): Promise<ClientHintsData> {
+    this.requireSupported(context);
+    const hints = (navigator as HintsNavigator).userAgentData;
+    if (!hints) throw new Error('Client Hints disappeared during collection');
+    const result: ClientHintsData = {
+      brands: [...hints.brands].sort((a, b) => a.brand.localeCompare(b.brand)),
+      mobile: hints.mobile,
+      platform: hints.platform,
+    };
+    if (this.options.highEntropy && typeof hints.getHighEntropyValues === 'function') {
       try {
-        const highEntropy = await uaData.getHighEntropyValues([
-          "architecture",
-          "bitness",
-          "model",
-          "platformVersion",
-          "fullVersionList",
-        ]);
-
-        result.architecture = highEntropy.architecture;
-        result.bitness = highEntropy.bitness;
-        result.model = highEntropy.model;
-        result.platformVersion = highEntropy.platformVersion;
-        result.fullVersionList = highEntropy.fullVersionList;
-      } catch {
-        // High entropy values may be blocked
+        const high = await this.withTimeout(
+          hints.getHighEntropyValues([
+            'architecture',
+            'bitness',
+            'model',
+            'platformVersion',
+            'fullVersionList',
+          ]),
+          undefined,
+          context?.signal,
+        );
+        for (const key of ['architecture', 'bitness', 'model', 'platformVersion'] as const) {
+          if (typeof high[key] === 'string') result[key] = high[key];
+        }
+        if (high.fullVersionList)
+          result.fullVersionList = [...high.fullVersionList].sort((a, b) =>
+            a.brand.localeCompare(b.brand),
+          );
+      } catch (error) {
+        if (context?.signal.aborted) throw error;
+        // Low-entropy observations are still real observations if high-entropy access is blocked.
       }
-
-      return result;
-    } catch (error) {
-      return {
-        brands: [],
-        mobile: false,
-        platform: "unknown",
-      };
     }
+    return result;
   }
 }

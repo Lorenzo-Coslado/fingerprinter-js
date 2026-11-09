@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "types": ["node"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "paths": {
+      "fingerprinter-js": ["./src/index.ts"],
+      "fingerprinter-js/collectors": ["./src/collectors/index.ts"],
+      "fingerprinter-js/utils": ["./src/utils.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "examples/**/*.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}
