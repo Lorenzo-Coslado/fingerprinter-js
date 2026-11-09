@@ -77,32 +77,37 @@ await assert.rejects(Fingerprint.generate(), { code: 'NOT_BROWSER' });
       'import { Fingerprint, Fingerprint as Named, type FingerprintOptions }',
     ),
   );
-  for (const mode of ['nodenext', 'bundler']) {
-    run(
-      process.execPath,
-      [
-        path.join(root, 'node_modules/typescript/bin/tsc'),
-        '--noEmit',
-        '--strict',
-        '--target',
-        'ES2020',
-        '--lib',
-        'ES2020,DOM,DOM.Iterable',
-        '--module',
-        mode === 'nodenext' ? 'NodeNext' : 'ESNext',
-        '--moduleResolution',
-        mode,
-        ...(mode === 'nodenext' ? ['consumer.mts', 'consumer.cts'] : ['consumer.mts']),
-      ],
-      temporary,
-    );
+  for (const compiler of [
+    'node_modules/@typescript/native/bin/tsc',
+    'node_modules/typescript/bin/tsc6',
+  ]) {
+    for (const mode of ['nodenext', 'bundler']) {
+      run(
+        process.execPath,
+        [
+          path.join(root, compiler),
+          '--noEmit',
+          '--strict',
+          '--target',
+          'ES2020',
+          '--lib',
+          'ES2020,DOM,DOM.Iterable',
+          '--module',
+          mode === 'nodenext' ? 'NodeNext' : 'ESNext',
+          '--moduleResolution',
+          mode,
+          ...(mode === 'nodenext' ? ['consumer.mts', 'consumer.cts'] : ['consumer.mts']),
+        ],
+        temporary,
+      );
+    }
   }
   const context = {};
   vm.runInNewContext(await readFile(path.join(root, 'dist/index.umd.cjs'), 'utf8'), context);
   assert.equal(context.FingerprinterJS.VERSION, pkg.version);
   assert.equal(typeof context.FingerprinterJS.Fingerprint, 'function');
   console.log(
-    `Package verified: ${archive.filename}; ESM, CJS, UMD, subpaths, SSR imports and TypeScript consumers.`,
+    `Package verified: ${archive.filename}; ESM, CJS, UMD, subpaths, SSR imports and TypeScript 7/6 consumers.`,
   );
 } catch (error) {
   if (error.stdout) process.stderr.write(String(error.stdout));
