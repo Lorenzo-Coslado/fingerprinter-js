@@ -1,872 +1,586 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FingerprinterJS - Browser Fingerprinting Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
     <meta
       name="description"
-      content="Interactive demo of FingerprinterJS - A modern JavaScript library for generating unique browser fingerprints with bot detection."
+      content="Try FingerprinterJS locally. Inspect collected signals, compare fingerprints, and run implementation checks in your browser."
     />
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
-
-    <style>
-      :root {
-        --bg-primary: #0a0a1a;
-        --bg-secondary: #12122a;
-        --bg-card: rgba(20, 20, 50, 0.6);
-        --bg-card-hover: rgba(30, 30, 70, 0.7);
-        --border-color: rgba(255, 255, 255, 0.1);
-        --text-primary: #ffffff;
-        --text-secondary: rgba(255, 255, 255, 0.7);
-        --text-muted: rgba(255, 255, 255, 0.5);
-        --accent-primary: #6366f1;
-        --accent-secondary: #8b5cf6;
-        --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
-        --success: #22c55e;
-        --warning: #eab308;
-        --danger: #ef4444;
-        --info: #3b82f6;
-        --glass-bg: rgba(255, 255, 255, 0.05);
-        --glass-border: rgba(255, 255, 255, 0.1);
-        --shadow-glow: 0 0 60px rgba(99, 102, 241, 0.15);
-      }
-
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        line-height: 1.6;
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
-
-      /* Background Animation */
-      .bg-gradient {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: 
-          radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-          radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-          radial-gradient(ellipse at 50% 50%, rgba(168, 85, 247, 0.05) 0%, transparent 70%);
-        z-index: -1;
-        animation: gradientMove 20s ease-in-out infinite;
-      }
-
-      @keyframes gradientMove {
-        0%, 100% { transform: scale(1) rotate(0deg); }
-        50% { transform: scale(1.1) rotate(3deg); }
-      }
-
-      /* Grid Pattern */
-      .bg-grid {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image: 
-          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-        background-size: 50px 50px;
-        z-index: -1;
-      }
-
-      /* Container */
-      .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 0 24px;
-      }
-
-      /* Header */
-      header {
-        padding: 40px 0;
-        text-align: center;
-      }
-
-      .logo {
-        display: inline-flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 16px;
-      }
-
-      .logo-icon {
-        width: 64px;
-        height: 64px;
-        background: var(--accent-gradient);
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 32px;
-        box-shadow: var(--shadow-glow);
-        animation: pulse 3s ease-in-out infinite;
-      }
-
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(99, 102, 241, 0.3); }
-        50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(99, 102, 241, 0.5); }
-      }
-
-      h1 {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: var(--accent-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .subtitle {
-        color: var(--text-secondary);
-        font-size: 1.1rem;
-        margin-top: 8px;
-      }
-
-      .badge {
-        display: inline-block;
-        padding: 4px 12px;
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 500;
-        color: var(--text-secondary);
-        margin-top: 16px;
-      }
-
-      /* Main Actions */
-      .actions {
-        display: flex;
-        justify-content: center;
-        gap: 16px;
-        margin: 40px 0;
-        flex-wrap: wrap;
-      }
-
-      .btn {
-        padding: 14px 32px;
-        border: none;
-        border-radius: 12px;
-        font-family: inherit;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .btn-primary {
-        background: var(--accent-gradient);
-        color: white;
-        box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-      }
-
-      .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.5);
-      }
-
-      .btn-secondary {
-        background: var(--glass-bg);
-        color: var(--text-primary);
-        border: 1px solid var(--glass-border);
-        backdrop-filter: blur(10px);
-      }
-
-      .btn-secondary:hover {
-        background: var(--bg-card-hover);
-        border-color: var(--accent-primary);
-      }
-
-      .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-        transform: none !important;
-      }
-
-      /* Result Section */
-      .result-section {
-        margin-bottom: 40px;
-      }
-
-      .fingerprint-display {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 16px;
-        padding: 24px;
-        backdrop-filter: blur(20px);
-        box-shadow: var(--shadow-glow);
-      }
-
-      .fingerprint-hash {
-        font-family: "Fira Code", monospace;
-        font-size: 1rem;
-        word-break: break-all;
-        background: rgba(0, 0, 0, 0.3);
-        padding: 16px;
-        border-radius: 8px;
-        margin: 16px 0;
-        position: relative;
-        border: 1px solid var(--border-color);
-      }
-
-      .copy-btn {
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: var(--accent-primary);
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        transition: all 0.2s;
-      }
-
-      .copy-btn:hover {
-        background: var(--accent-secondary);
-      }
-
-      /* Stats Grid */
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 16px;
-        margin-top: 24px;
-      }
-
-      .stat-card {
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: 12px;
-        padding: 16px;
-        text-align: center;
-      }
-
-      .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        background: var(--accent-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      .stat-label {
-        font-size: 0.8rem;
-        color: var(--text-muted);
-        margin-top: 4px;
-      }
-
-      /* Confidence Bar */
-      .confidence-bar {
-        height: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-top: 8px;
-      }
-
-      .confidence-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.5s ease;
-      }
-
-      .confidence-high { background: linear-gradient(90deg, #22c55e, #4ade80); }
-      .confidence-medium { background: linear-gradient(90deg, #eab308, #facc15); }
-      .confidence-low { background: linear-gradient(90deg, #ef4444, #f87171); }
-
-      /* Risk Level */
-      .risk-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-      }
-
-      .risk-low { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-      .risk-medium { background: rgba(234, 179, 8, 0.2); color: #facc15; }
-      .risk-high { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-
-      /* Components Section */
-      .section-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 40px 0 24px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .section-title::before {
-        content: "";
-        width: 4px;
-        height: 24px;
-        background: var(--accent-gradient);
-        border-radius: 2px;
-      }
-
-      .components-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 16px;
-      }
-
-      .component-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        backdrop-filter: blur(10px);
-      }
-
-      .component-card:hover {
-        border-color: var(--accent-primary);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15);
-      }
-
-      .component-header {
-        padding: 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        border-bottom: 1px solid var(--border-color);
-      }
-
-      .component-name {
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .component-icon {
-        width: 32px;
-        height: 32px;
-        background: var(--glass-bg);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-      }
-
-      .component-status {
-        font-size: 0.75rem;
-        padding: 4px 8px;
-        border-radius: 4px;
-        background: rgba(34, 197, 94, 0.2);
-        color: #4ade80;
-      }
-
-      .component-status.error {
-        background: rgba(239, 68, 68, 0.2);
-        color: #f87171;
-      }
-
-      .component-body {
-        padding: 16px;
-        font-family: "Fira Code", monospace;
-        font-size: 0.8rem;
-        max-height: 200px;
-        overflow: auto;
-        display: none;
-      }
-
-      .component-card.expanded .component-body {
-        display: block;
-      }
-
-      .component-body pre {
-        white-space: pre-wrap;
-        word-break: break-all;
-        color: var(--text-secondary);
-      }
-
-      /* Signals Section */
-      .signals-list {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .signal-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 16px;
-        background: var(--glass-bg);
-        border: 1px solid var(--glass-border);
-        border-radius: 8px;
-      }
-
-      .signal-severity {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-      }
-
-      .signal-severity.high { background: var(--danger); }
-      .signal-severity.medium { background: var(--warning); }
-      .signal-severity.low { background: var(--success); }
-
-      .signal-type {
-        font-weight: 600;
-        min-width: 150px;
-      }
-
-      .signal-desc {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-      }
-
-      /* Footer */
-      footer {
-        text-align: center;
-        padding: 60px 0;
-        color: var(--text-muted);
-        font-size: 0.9rem;
-      }
-
-      footer a {
-        color: var(--accent-primary);
-        text-decoration: none;
-      }
-
-      footer a:hover {
-        text-decoration: underline;
-      }
-
-      /* Loading State */
-      .loading {
-        display: none;
-        text-align: center;
-        padding: 40px;
-      }
-
-      .loading.visible {
-        display: block;
-      }
-
-      .spinner {
-        width: 48px;
-        height: 48px;
-        border: 3px solid var(--border-color);
-        border-top-color: var(--accent-primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 16px;
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-
-      /* Responsive */
-      @media (max-width: 768px) {
-        h1 { font-size: 1.8rem; }
-        .container { padding: 0 16px; }
-        .components-grid { grid-template-columns: 1fr; }
-        .actions { flex-direction: column; }
-        .btn { width: 100%; justify-content: center; }
-      }
-
-      /* Animations */
-      .fade-in {
-        animation: fadeIn 0.5s ease;
-      }
-
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-
-      .hidden {
-        display: none !important;
-      }
-    </style>
+    <title>FingerprinterJS — Browser playground</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
   </head>
   <body>
-    <div class="bg-gradient"></div>
-    <div class="bg-grid"></div>
-
-    <div class="container">
-      <header>
-        <div class="logo">
-          <div class="logo-icon">🔐</div>
-          <div>
-            <h1>FingerprinterJS</h1>
-            <p class="subtitle">Enterprise-grade Browser Fingerprinting</p>
-          </div>
-        </div>
-        <span class="badge">v2.0.0 • 19 Collectors • Bot Detection</span>
-      </header>
-
-      <div class="actions">
-        <button class="btn btn-primary" id="generateBtn">
-          <span>🎯</span> Generate Fingerprint
-        </button>
-        <button class="btn btn-secondary" id="stabilityBtn">
-          <span>🔄</span> Stability Test
-        </button>
-        <button class="btn btn-secondary" id="optionsBtn">
-          <span>⚙️</span> Options
-        </button>
+    <a class="skip-link" href="#main">Skip to playground</a>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="./" aria-label="FingerprinterJS home"
+          ><svg class="brand-mark" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+            <path
+              d="M7 10a7 7 0 0 1 14 0v5m-17 0v-4a10 10 0 0 1 20 0v3M10 15v-4a4 4 0 0 1 8 0v6a17 17 0 0 1-1 6M7 14v3a10 10 0 0 1-2 6m9-12v6a14 14 0 0 1-3 8m-1-7a10 10 0 0 1-3 7m14-7a23 23 0 0 1-1 6"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            /></svg
+          ><span>FingerprinterJS</span><span class="version" id="sdkVersion">v3</span></a
+        >
+        <nav class="header-links" aria-label="Project links">
+          <a href="https://github.com/Lorenzo-Coslado/fingerprinter-js#readme">Documentation</a
+          ><a
+            class="icon-link"
+            href="https://github.com/Lorenzo-Coslado/fingerprinter-js"
+            aria-label="GitHub repository"
+            ><svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M9 19c-4.3 1.3-4.3-2-6-2.5m12 5v-3.8c0-1.1.1-1.6-.5-2.3 2.8-.3 5.8-1.4 5.8-6.3 0-1.4-.5-2.5-1.3-3.4.1-.3.6-1.6-.1-3.3 0 0-1.1-.3-3.6 1.3a12.4 12.4 0 0 0-6.6 0C6.2 2.1 5.1 2.4 5.1 2.4c-.7 1.7-.2 3-.1 3.3A4.9 4.9 0 0 0 3.7 9c0 4.9 3 6 5.8 6.3-.5.5-.6 1.1-.5 2.3v3.9"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg></a
+          ><span class="header-divider" aria-hidden="true"></span
+          ><button
+            class="icon-button"
+            id="themeToggle"
+            type="button"
+            aria-label="Switch color theme"
+            title="Switch color theme"
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M20.5 13.4A8.5 8.5 0 0 1 10.6 3.5a8.5 8.5 0 1 0 9.9 9.9Z"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+        </nav>
       </div>
-
-      <!-- Options Panel -->
-      <div id="optionsPanel" class="hidden fingerprint-display" style="margin-bottom: 24px;">
-        <h3 style="margin-bottom: 16px;">Collector Options</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px;">
-          <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="opt-canvas" /> Exclude Canvas
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="opt-webgl" /> Exclude WebGL
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="opt-audio" /> Exclude Audio
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="opt-fonts" /> Exclude Fonts
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="opt-webrtc" /> Exclude WebRTC
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px;">
-            <input type="checkbox" id="opt-hardware" /> Exclude Hardware
-          </label>
-          <label style="display: flex; align-items: center; gap: 8px; grid-column: span 2;">
-            <input type="checkbox" id="opt-suspect" checked /> Include Bot Detection
-          </label>
-        </div>
-      </div>
-
-      <!-- Loading State -->
-      <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p>Generating fingerprint...</p>
-      </div>
-
-      <!-- Result Section -->
-      <div class="result-section hidden" id="resultSection">
-        <div class="fingerprint-display fade-in">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
-            <h3>🎯 Your Browser Fingerprint</h3>
-            <span id="riskBadge" class="risk-badge risk-low">
-              <span>✓</span> LOW RISK
-            </span>
-          </div>
-
-          <div class="fingerprint-hash">
-            <span id="fingerprintHash">-</span>
-            <button class="copy-btn">Copy</button>
-          </div>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-value" id="confidenceValue">-</div>
-              <div class="stat-label">Confidence</div>
-              <div class="confidence-bar">
-                <div class="confidence-fill confidence-high" id="confidenceBar" style="width: 0%"></div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="entropyValue">-</div>
-              <div class="stat-label">Entropy (bits)</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="durationValue">-</div>
-              <div class="stat-label">Duration (ms)</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value" id="componentsCount">-</div>
-              <div class="stat-label">Components</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stability Test Result -->
-      <div class="result-section hidden" id="stabilitySection">
-        <div class="fingerprint-display fade-in">
-          <h3 style="margin-bottom: 16px;">🔄 Stability Test Results</h3>
-          <div id="stabilityResults"></div>
-        </div>
-      </div>
-
-      <!-- Signals Section -->
-      <div class="hidden" id="signalsSection">
-        <h2 class="section-title">🛡️ Bot Detection Signals</h2>
-        <div class="signals-list" id="signalsList"></div>
-      </div>
-
-      <!-- Components Section -->
-      <div class="hidden" id="componentsSection">
-        <h2 class="section-title">📊 Collected Components</h2>
-        <div class="components-grid" id="componentsGrid"></div>
-      </div>
-
-      <footer>
+    </header>
+    <main id="main" class="page-shell">
+      <div class="page-heading">
+        <h1>Browser fingerprint playground</h1>
         <p>
-          Built with ❤️ by <a href="https://github.com/Lorenzo-Coslado" target="_blank">Lorenzo Coslado</a>
+          See what your browser reveals. Inspect the signals, compare two runs, and check how the
+          library behaves.
         </p>
-        <p style="margin-top: 8px;">
-          <a href="https://github.com/Lorenzo-Coslado/fingerprinter-js" target="_blank">GitHub</a> •
-          <a href="https://www.npmjs.com/package/fingerprinter-js" target="_blank">NPM</a>
+        <div class="privacy-line">
+          <span class="status-dot" aria-hidden="true"></span>Runs in this tab. Nothing is collected
+          until you start.
+        </div>
+      </div>
+      <div class="tab-bar" role="tablist" aria-label="Explore FingerprinterJS">
+        <button
+          id="tab-playground"
+          type="button"
+          role="tab"
+          aria-selected="true"
+          aria-controls="panel-playground"
+          data-tab="playground"
+        >
+          Playground</button
+        ><button
+          id="tab-explained"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-explained"
+          tabindex="-1"
+          data-tab="explained"
+        >
+          How it works</button
+        ><button
+          id="tab-checks"
+          type="button"
+          role="tab"
+          aria-selected="false"
+          aria-controls="panel-checks"
+          tabindex="-1"
+          data-tab="checks"
+        >
+          Browser checks<span id="checksTabCount" class="tab-count" hidden></span>
+        </button>
+      </div>
+      <section id="panel-playground" role="tabpanel" aria-labelledby="tab-playground">
+        <div class="playground-layout">
+          <aside class="configuration" aria-label="Collection settings">
+            <form id="settingsForm">
+              <fieldset class="profile-fieldset">
+                <legend>Collection profile</legend>
+                <p class="field-help">Choose how much to inspect.</p>
+                <label class="profile-option"
+                  ><input type="radio" name="profile" value="minimal" /><span
+                    ><span class="profile-title">Minimal</span
+                    ><span class="profile-description"
+                      >A small set of browser capabilities.</span
+                    ></span
+                  ></label
+                >
+                <label class="profile-option"
+                  ><input type="radio" name="profile" value="balanced" checked /><span
+                    ><span class="profile-title"
+                      >Balanced<span class="subtle-tag">Default</span></span
+                    ><span class="profile-description"
+                      >A practical set of identifying signals.</span
+                    ></span
+                  ></label
+                >
+                <label class="profile-option"
+                  ><input type="radio" name="profile" value="diagnostic" /><span
+                    ><span class="profile-title">Diagnostic</span
+                    ><span class="profile-description"
+                      >More context for troubleshooting.</span
+                    ></span
+                  ></label
+                >
+              </fieldset>
+              <div class="run-controls">
+                <button class="button button-primary" id="generateBtn" type="submit" disabled>
+                  <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <path
+                      d="m7 4 9 6-9 6V4Z"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      stroke-linejoin="round"
+                    /></svg
+                  ><span>Generate fingerprint</span></button
+                ><button class="button button-secondary" id="cancelBtn" type="button" hidden>
+                  Cancel collection
+                </button>
+              </div>
+              <p class="network-note" id="networkNote">
+                <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path
+                    d="M8 1.5 13 3v4c0 3.1-3.3 5.9-5 7-1.7-1.1-5-3.9-5-7V3l5-1.5Z"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="m5.5 7.5 1.7 1.7 3.3-3.4"
+                    stroke="currentColor"
+                    stroke-width="1.2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  /></svg
+                >No network collectors enabled
+              </p>
+              <div class="settings-divider"></div>
+              <div class="setting-row">
+                <label for="includeAnalysis">Analyze automation signals</label
+                ><input class="switch" id="includeAnalysis" type="checkbox" />
+              </div>
+              <p class="field-help">Heuristics only. Not a fraud verdict.</p>
+              <details class="advanced-settings">
+                <summary>Advanced settings<span class="chevron" aria-hidden="true"></span></summary>
+                <div class="advanced-content">
+                  <label class="field-label" for="timeout"
+                    >Per-collector timeout<span class="input-with-unit"
+                      ><input
+                        id="timeout"
+                        type="number"
+                        value="1000"
+                        min="1"
+                        max="30000"
+                        step="1"
+                        required
+                      /><span>ms</span></span
+                    ></label
+                  >
+                  <label class="field-label" for="timeBudget"
+                    >Total collection budget<span class="input-with-unit"
+                      ><input
+                        id="timeBudget"
+                        type="number"
+                        value="1500"
+                        min="1"
+                        max="60000"
+                        step="1"
+                        required
+                      /><span>ms</span></span
+                    ></label
+                  >
+                  <div class="setting-row">
+                    <label for="parallel">Collect in parallel</label
+                    ><input class="switch" id="parallel" type="checkbox" checked />
+                  </div>
+                  <div class="setting-row">
+                    <label for="network">Allow network collectors</label
+                    ><input class="switch" id="network" type="checkbox" />
+                  </div>
+                  <p class="field-help">
+                    Enables optional WebRTC diagnostics when selected. No STUN or TURN server is
+                    configured here.
+                  </p>
+                </div>
+              </details>
+              <details class="collector-settings">
+                <summary>
+                  Choose collectors<span id="selectionCount" class="selection-count">Loading…</span
+                  ><span class="chevron" aria-hidden="true"></span>
+                </summary>
+                <div class="collector-options" id="collectorOptions"></div>
+                <button class="text-button" id="resetCollectors" type="button">
+                  Reset to profile
+                </button>
+              </details>
+            </form>
+          </aside>
+          <div class="results-column">
+            <div class="result-panel" id="resultPanel" aria-busy="false">
+              <div class="panel-heading">
+                <h2>Collection result</h2>
+                <span class="status-badge" id="runStatus"
+                  ><span class="badge-dot" aria-hidden="true"></span>Ready</span
+                >
+              </div>
+              <div class="result-empty" id="emptyState">
+                <svg class="empty-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                  <rect
+                    x="7"
+                    y="7"
+                    width="34"
+                    height="34"
+                    rx="9"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                  />
+                  <path
+                    d="M17 23v-2a7 7 0 0 1 14 0v7m-18-1v-6a11 11 0 0 1 22 0v4m-14 2v-6a3 3 0 1 1 6 0v7m-10 0a15 15 0 0 1-2 6m6-4a15 15 0 0 1-2 6m12-4a22 22 0 0 1-1 5"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                <h3>No fingerprint yet</h3>
+                <p>
+                  Start a collection to see the signals available in this browser and the
+                  fingerprint they produce.
+                </p>
+                <div class="empty-sequence" aria-hidden="true">
+                  <span>Collect</span><span class="sequence-line"></span><span>Project</span
+                  ><span class="sequence-line"></span><span>Hash</span>
+                </div>
+              </div>
+              <div id="resultContent" hidden>
+                <div class="fingerprint-block">
+                  <div class="label-and-action">
+                    <span class="field-caption">Fingerprint</span
+                    ><button
+                      class="icon-button"
+                      id="copyFingerprint"
+                      type="button"
+                      aria-label="Copy fingerprint"
+                      title="Copy fingerprint"
+                    >
+                      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                        <rect
+                          x="7"
+                          y="7"
+                          width="9"
+                          height="10"
+                          rx="1.5"
+                          stroke="currentColor"
+                          stroke-width="1.4"
+                        />
+                        <path
+                          d="M12 7V4.5A1.5 1.5 0 0 0 10.5 3h-6A1.5 1.5 0 0 0 3 4.5v7A1.5 1.5 0 0 0 4.5 13H7"
+                          stroke="currentColor"
+                          stroke-width="1.4"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <output id="fingerprintValue" class="fingerprint-value"></output>
+                  <p class="result-meta" id="resultMeta"></p>
+                </div>
+                <dl class="result-stats">
+                  <div>
+                    <dt>Collection coverage</dt>
+                    <dd id="coverageValue">—</dd>
+                  </div>
+                  <div>
+                    <dt>Collection time</dt>
+                    <dd id="durationValue">—</dd>
+                  </div>
+                  <div>
+                    <dt>Hash inputs</dt>
+                    <dd id="hashInputsValue">—</dd>
+                  </div>
+                </dl>
+                <p class="coverage-note">
+                  Coverage describes collected signals, not identification accuracy.
+                </p>
+                <div class="analysis-summary" id="analysisSummary" hidden></div>
+                <div class="comparison-summary" id="comparisonSummary" hidden></div>
+                <div class="result-actions">
+                  <button
+                    class="button button-secondary button-small"
+                    id="exportDiagnostic"
+                    type="button"
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path
+                        d="M8 2v8m-3-3 3 3 3-3M3 10v3h10v-3"
+                        stroke="currentColor"
+                        stroke-width="1.3"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      /></svg
+                    >Export redacted diagnostic</button
+                  ><span>Signal values and fingerprint omitted</span>
+                </div>
+              </div>
+              <div class="inline-error" id="collectionError" role="alert" hidden></div>
+            </div>
+            <div class="components-section" id="componentsSection" hidden>
+              <div class="section-heading">
+                <div>
+                  <h2>Signals &amp; components</h2>
+                  <p>Expand a signal to inspect its local value.</p>
+                </div>
+                <label class="inline-checkbox"
+                  ><input id="showExcluded" type="checkbox" />Show excluded</label
+                >
+              </div>
+              <div class="table-scroll">
+                <table class="components-table">
+                  <caption class="sr-only">
+                    Collector status, time, and eligibility for fingerprint projection
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Collector</th>
+                      <th scope="col">Status</th>
+                      <th scope="col">Time</th>
+                      <th scope="col">Hash input</th>
+                    </tr>
+                  </thead>
+                  <tbody id="componentsBody"></tbody>
+                </table>
+              </div>
+              <p class="table-note">
+                Only successful, eligible fields enter the versioned fingerprint projection. Raw
+                observations stay in this tab.
+              </p>
+            </div>
+            <div class="usage-section">
+              <div class="section-heading">
+                <h2>Use this configuration</h2>
+                <button
+                  class="button button-secondary button-small"
+                  id="copyExample"
+                  type="button"
+                  disabled
+                >
+                  Copy code
+                </button>
+              </div>
+              <pre class="code-block"><code id="usageCode">Loading the local SDK…</code></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="panel-explained" role="tabpanel" aria-labelledby="tab-explained" hidden>
+        <div class="explainer-heading">
+          <h2>One collection. A defined projection.</h2>
+          <p>
+            A fingerprint is a hash of selected browser observations. The same projected data
+            produces the same hash. A changed browser, device, or protection setting can change the
+            observations.
+          </p>
+        </div>
+        <div
+          class="pipeline"
+          id="pipeline"
+          aria-label="Collect observations, project eligible fields, serialize in a canonical order, then calculate SHA-256"
+        >
+          <article class="pipeline-step">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M4 6h16v11H4zM8 21h8M12 17v4M4 10h16"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <h3>Collect</h3>
+            <p>Observe the capabilities available in this browser.</p>
+            <code>collectorResults</code>
+          </article>
+          <span class="pipeline-connector" aria-hidden="true"></span>
+          <article class="pipeline-step">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M3 5h18l-7 8v6l-4 2v-8L3 5Z"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <h3>Project</h3>
+            <p>Select defined fields. Leave volatile context out.</p>
+            <code>fingerprintVersion</code>
+          </article>
+          <span class="pipeline-connector" aria-hidden="true"></span>
+          <article class="pipeline-step">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="M9 4H6v16h3m6-16h3v16h-3M10 8h4m-4 4h4m-4 4h4"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <h3>Canonicalize</h3>
+            <p>Order object keys for a reproducible representation.</p>
+            <code>safeStringify</code>
+          </article>
+          <span class="pipeline-connector" aria-hidden="true"></span>
+          <article class="pipeline-step">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path
+                d="m10 3-4 18M18 3l-4 18M4 9h17M3 15h17"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+              />
+            </svg>
+            <h3>Hash</h3>
+            <p>Calculate SHA-256, including the schema version.</p>
+            <code>fingerprint</code>
+          </article>
+        </div>
+        <div class="diagram-controls">
+          <button class="button button-secondary button-small" id="replayPipeline" type="button">
+            Replay the flow</button
+          ><span>Illustrates the process; no data is collected.</span>
+        </div>
+        <div class="explanation-grid">
+          <article>
+            <h3>A signal, not an identity</h3>
+            <p>
+              Different browsers can share an identical fingerprint. The same browser can produce a
+              different one as its environment changes. Use it as contextual evidence, never as an
+              authentication secret.
+            </p>
+          </article>
+          <article>
+            <h3>Context stays separate</h3>
+            <p>
+              <code>customData</code> is returned as context and does not affect the fingerprint.
+              Only explicitly supplied <code>fingerprintData</code> joins the hash input. UUID
+              values are preserved.
+            </p>
+          </article>
+          <article>
+            <h3>Missing is a real state</h3>
+            <p>
+              Unsupported APIs, blocked access, timeouts, and exclusions have separate statuses.
+              They are not proof of automation, and they do not count as successful collection.
+            </p>
+          </article>
+          <article>
+            <h3>You control the collection</h3>
+            <p>
+              No collector runs when you open this page. Network collectors are disabled by default.
+              Decide when collection is appropriate for your application and its users.
+            </p>
+          </article>
+        </div>
+        <div class="documentation-link">
+          <div>
+            <h3>Integrating the library?</h3>
+            <p>Read the API, privacy guidance, and v2 migration notes before shipping.</p>
+          </div>
+          <a
+            class="button button-secondary"
+            href="https://github.com/Lorenzo-Coslado/fingerprinter-js#readme"
+            >Read the documentation<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M3 8h10m-4-4 4 4-4 4"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></a>
+        </div>
+      </section>
+      <section id="panel-checks" role="tabpanel" aria-labelledby="tab-checks" hidden>
+        <div class="checks-heading">
+          <div>
+            <h2>Check the implementation in your browser</h2>
+            <p>
+              Run real checks against this build: hashing, canonical data, collection controls,
+              storage, and short-term repeatability.
+            </p>
+          </div>
+          <button class="button button-primary" id="runChecksBtn" type="button" disabled>
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path
+                d="m7 4 9 6-9 6V4Z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linejoin="round"
+              /></svg
+            >Run browser checks</button
+          ><button class="button button-secondary" id="stopChecksBtn" type="button" hidden>
+            Stop checks
+          </button>
+        </div>
+        <p class="checks-notice">
+          These checks run locally on request. They do not measure uniqueness, long-term stability,
+          or bot-detection accuracy. Repeatability uses your current playground settings.
         </p>
+        <div class="checks-summary" id="checksSummary" role="status" aria-live="polite">
+          No checks have run yet.
+        </div>
+        <ol class="checks-list" id="checksList"></ol>
+        <div class="checks-footer">
+          <p>Want reproducible checks on every change?</p>
+          <a href="https://github.com/Lorenzo-Coslado/fingerprinter-js#try-it-and-run-the-tests"
+            >Run the full test suite in the repository<svg
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M3 8h10m-4-4 4 4-4 4"
+                stroke="currentColor"
+                stroke-width="1.4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              /></svg
+          ></a>
+        </div>
+      </section>
+      <noscript
+        ><p class="inline-error">
+          This playground needs JavaScript to run the SDK. The
+          <a href="https://github.com/Lorenzo-Coslado/fingerprinter-js#readme">documentation</a> is
+          available without it.
+        </p></noscript
+      >
+      <footer class="site-footer">
+        <p>FingerprinterJS<span aria-hidden="true">·</span>Open source, MIT licensed.</p>
+        <a href="https://github.com/Lorenzo-Coslado/fingerprinter-js/issues"
+          >Report an issue<svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M4 12 12 4M4 4h8v8"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            /></svg
+        ></a>
       </footer>
-    </div>
-
-    <script type="module">
-      import { Fingerprint } from "https://unpkg.com/fingerprinter-js@2.0.1/dist/index.esm.js";
-
-      window.Fingerprint = Fingerprint;
-      window.lastResult = null;
-
-      const componentIcons = {
-        userAgent: "🌐",
-        language: "🗣️",
-        timezone: "🕐",
-        screen: "🖥️",
-        plugins: "🔌",
-        canvas: "🎨",
-        webgl: "🎮",
-        audio: "🔊",
-        fonts: "🔤",
-        hardware: "💻",
-        webrtc: "📡",
-        clientHints: "📋",
-        storage: "💾",
-        battery: "🔋",
-        connection: "📶",
-        touch: "👆",
-        permissions: "🔐",
-        math: "🔢",
-        mediaDevices: "📹",
-      };
-
-      window.generateFingerprint = async function () {
-        const btn = document.getElementById("generateBtn");
-        const loading = document.getElementById("loading");
-        const resultSection = document.getElementById("resultSection");
-        const componentsSection = document.getElementById("componentsSection");
-        const signalsSection = document.getElementById("signalsSection");
-        const stabilitySection = document.getElementById("stabilitySection");
-
-        btn.disabled = true;
-        stabilitySection.classList.add("hidden");
-        loading.classList.add("visible");
-        resultSection.classList.add("hidden");
-        componentsSection.classList.add("hidden");
-        signalsSection.classList.add("hidden");
-
-        try {
-          const options = getOptions();
-          const result = await Fingerprint.generate(options);
-          window.lastResult = result;
-
-          // Update UI
-          document.getElementById("fingerprintHash").textContent = result.fingerprint;
-          document.getElementById("confidenceValue").textContent = result.confidence + "%";
-          document.getElementById("entropyValue").textContent = result.entropy;
-          document.getElementById("durationValue").textContent = result.duration.toFixed(1);
-          document.getElementById("componentsCount").textContent = Object.keys(result.components).length;
-
-          // Update confidence bar
-          const bar = document.getElementById("confidenceBar");
-          bar.style.width = result.confidence + "%";
-          bar.className = "confidence-fill " + (
-            result.confidence >= 80 ? "confidence-high" :
-            result.confidence >= 50 ? "confidence-medium" : "confidence-low"
-          );
-
-          // Update risk badge
-          if (result.suspectAnalysis) {
-            const badge = document.getElementById("riskBadge");
-            const riskLevel = result.suspectAnalysis.riskLevel;
-            badge.className = "risk-badge risk-" + riskLevel.toLowerCase();
-            badge.innerHTML = `<span>${riskLevel === "LOW" ? "✓" : riskLevel === "MEDIUM" ? "⚠" : "✗"}</span> ${riskLevel} RISK (${result.suspectAnalysis.score})`;
-
-            // Show signals
-            if (result.suspectAnalysis.signals.length > 0) {
-              signalsSection.classList.remove("hidden");
-              renderSignals(result.suspectAnalysis.signals);
-            }
-          }
-
-          // Render components
-          renderComponents(result.components);
-
-          loading.classList.remove("visible");
-          resultSection.classList.remove("hidden");
-          componentsSection.classList.remove("hidden");
-
-        } catch (error) {
-          alert("Error: " + error.message);
-          loading.classList.remove("visible");
-        }
-
-        btn.disabled = false;
-      };
-
-      window.runStabilityTest = async function () {
-        const btn = document.getElementById("stabilityBtn");
-        const loading = document.getElementById("loading");
-        const stabilitySection = document.getElementById("stabilitySection");
-        const resultSection = document.getElementById("resultSection");
-
-        btn.disabled = true;
-        resultSection.classList.add("hidden");
-        loading.classList.add("visible");
-        stabilitySection.classList.add("hidden");
-
-        const results = [];
-        const options = getOptions();
-
-        try {
-          for (let i = 0; i < 3; i++) {
-            const result = await Fingerprint.generate(options);
-            results.push(result);
-            await new Promise(r => setTimeout(r, 100));
-          }
-
-          const allSame = results.every(r => r.fingerprint === results[0].fingerprint);
-
-          let html = `
-            <div style="margin-bottom: 16px; padding: 16px; background: ${allSame ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; border-radius: 8px;">
-              <strong>${allSame ? '✅ STABLE' : '❌ UNSTABLE'}</strong> - 
-              ${allSame ? 'All fingerprints are identical!' : 'Fingerprints differ between runs.'}
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-          `;
-
-          results.forEach((r, i) => {
-            const same = r.fingerprint === results[0].fingerprint;
-            html += `
-              <div style="padding: 12px; background: ${same ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'}; border-radius: 6px; font-family: 'Fira Code', monospace; font-size: 0.8rem;">
-                <strong>Run ${i + 1}:</strong> ${r.fingerprint.slice(0, 32)}...
-              </div>
-            `;
-          });
-
-          html += "</div>";
-
-          document.getElementById("stabilityResults").innerHTML = html;
-
-          loading.classList.remove("visible");
-          stabilitySection.classList.remove("hidden");
-
-        } catch (error) {
-          alert("Error: " + error.message);
-          loading.classList.remove("visible");
-        }
-
-        btn.disabled = false;
-      };
-
-      function getOptions() {
-        return {
-          excludeCanvas: document.getElementById("opt-canvas")?.checked || false,
-          excludeWebGL: document.getElementById("opt-webgl")?.checked || false,
-          excludeAudio: document.getElementById("opt-audio")?.checked || false,
-          excludeFonts: document.getElementById("opt-fonts")?.checked || false,
-          excludeWebRTC: document.getElementById("opt-webrtc")?.checked || false,
-          excludeHardware: document.getElementById("opt-hardware")?.checked || false,
-          includeSuspectAnalysis: document.getElementById("opt-suspect")?.checked !== false,
-        };
-      }
-
-      function renderComponents(components) {
-        const grid = document.getElementById("componentsGrid");
-        grid.innerHTML = "";
-
-        for (const [name, data] of Object.entries(components)) {
-          const hasError = data && typeof data === "object" && data.error;
-          const icon = componentIcons[name] || "📦";
-
-          const card = document.createElement("div");
-          card.className = "component-card";
-          card.innerHTML = `
-            <div class="component-header" onclick="this.parentElement.classList.toggle('expanded')">
-              <div class="component-name">
-                <div class="component-icon">${icon}</div>
-                <span>${name}</span>
-              </div>
-              <span class="component-status ${hasError ? 'error' : ''}">${hasError ? 'Error' : 'OK'}</span>
-            </div>
-            <div class="component-body">
-              <pre>${JSON.stringify(data, null, 2)}</pre>
-            </div>
-          `;
-          grid.appendChild(card);
-        }
-      }
-
-      function renderSignals(signals) {
-        const list = document.getElementById("signalsList");
-        list.innerHTML = "";
-
-        for (const signal of signals) {
-          const severityClass = signal.severity >= 7 ? "high" : signal.severity >= 4 ? "medium" : "low";
-          const item = document.createElement("div");
-          item.className = "signal-item";
-          item.innerHTML = `
-            <div class="signal-severity ${severityClass}"></div>
-            <div class="signal-type">${signal.type}</div>
-            <div class="signal-desc">${signal.description}</div>
-          `;
-          list.appendChild(item);
-        }
-      }
-
-      window.toggleOptions = function () {
-        document.getElementById("optionsPanel").classList.toggle("hidden");
-      };
-
-      window.copyFingerprint = function () {
-        if (window.lastResult) {
-          navigator.clipboard.writeText(window.lastResult.fingerprint);
-          const btn = document.querySelector(".copy-btn");
-          btn.textContent = "Copied!";
-          setTimeout(() => btn.textContent = "Copy", 2000);
-        }
-      };
-
-      // Add event listeners after module loads
-      document.getElementById("generateBtn").addEventListener("click", window.generateFingerprint);
-      document.getElementById("stabilityBtn").addEventListener("click", window.runStabilityTest);
-      document.getElementById("optionsBtn").addEventListener("click", window.toggleOptions);
-      document.querySelector(".copy-btn").addEventListener("click", window.copyFingerprint);
-    </script>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </body>
 </html>

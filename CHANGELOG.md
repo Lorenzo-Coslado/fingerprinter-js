@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - Unreleased
+
+### Changed
+
+- Introduce fingerprint schema 3 with canonical JSON, field-specific stable projections and genuine SHA-256 in every environment. v2 and v3 IDs are incompatible.
+- Use explicit minimal, balanced and diagnostic profiles; disable WebRTC unless explicitly selected with network opt-in. Remove the imposed Google STUN service.
+- Preserve customData as context outside the hash; use fingerprintData for explicit identification inputs and retain UUIDs.
+- Replace unmeasured confidence/entropy claims with collectionCoverage, explicit per-collector states and quality. Legacy confidence is a deprecated coverage alias; entropy is null.
+- Make automation analysis pure, replayable and versioned; remove arbitrary locale, privacy and error-free-collection suspicion.
+
+### Fixed
+
+- Honor per-collector timeouts, a shared total collection budget, sequential execution and AbortSignal cancellation.
+- Preserve application storage keys, cancel timers, clean up rendering/DOM/audio/WebRTC resources and use offline audio.
+- Ship working ESM/CommonJS collector and utility entries with bundled declarations verified in real TypeScript consumers.
+- Generate the embedded version from package metadata and align package, security, migration and release documentation.
+
+### Added
+
+- Typed custom collectors with explicit projection/cleanup contracts, component comparison, redacted output and inspectable metadata.
+- Local playground with real browser self-tests, repeatability checks, reduced diagnostic export and an accessible collection diagram.
+- Regression, mutation, package-consumer and Chromium/Firefox/WebKit tests; pull-request CI and source-built GitHub Pages deployment.
+- npm OIDC publication of the validated archive, dependency update configuration and a maintained release procedure.
+
 ## [1.0.0] - 2025-08-01
 
 ### Added

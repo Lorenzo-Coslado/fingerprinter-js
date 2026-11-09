@@ -1,422 +1,425 @@
-/**
- * FingerprinterJS v2.0
- * Main Fingerprint Class
- */
+import { SuspectAnalyzer } from './suspect-analyzer';
+import { DEFAULT_OPTIONS, FINGERPRINT_VERSION, FingerprintError, VERSION } from './types';
+import type {
+  CollectorContext,
+  CollectorDescriptor,
+  CollectorResult,
+  CollectorResults,
+  ComponentCollector,
+  Components,
+  FingerprintOptions,
+  FingerprintResult,
+  GenerationOptions,
+} from './types';
+import { errorMessage, isBrowser, safeStringify, sha256 } from './utils';
+import { COLLECTOR_REGISTRY, getCollectorMetadata } from './collectors/registry';
+import { collectAutomationSnapshot } from './collectors/automation';
 
-import { SuspectAnalyzer } from "./suspect-analyzer";
-import {
-    ComponentCollector,
-    DEFAULT_OPTIONS,
-    FingerprintError,
-    FingerprintOptions,
-    FingerprintResult,
-    VERSION,
-} from "./types";
-import { isBrowser, safeStringify, sha256 } from "./utils";
+interface Task {
+  collector: ComponentCollector;
+  project?: (value: unknown) => unknown;
+  blocked?: string;
+}
+interface Collection {
+  components: Components;
+  collectorResults: CollectorResults;
+  projected: Record<string, unknown>;
+  selected: number;
+  succeeded: number;
+  started: number;
+}
+const now = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+const snapshot = <T>(value: T): T => JSON.parse(safeStringify(value)) as T;
 
-// Import all collectors
-import {
-    AudioCollector,
-    BatteryCollector,
-    CanvasCollector,
-    ClientHintsCollector,
-    ConnectionCollector,
-    FontsCollector,
-    HardwareCollector,
-    LanguageCollector,
-    MathCollector,
-    MediaDevicesCollector,
-    PermissionsCollector,
-    PluginsCollector,
-    ScreenCollector,
-    StorageCollector,
-    TimezoneCollector,
-    TouchCollector,
-    UserAgentCollector,
-    WebGLCollector,
-    WebRTCCollector,
-} from "./collectors";
-
-/**
- * Main Fingerprint class
- * Generates unique browser fingerprints using multiple techniques
- */
-export class Fingerprint {
-  private collectors: ComponentCollector[] = [];
-  private options: FingerprintOptions;
-
-  constructor(options: FingerprintOptions = {}) {
-    this.options = { ...DEFAULT_OPTIONS, ...options };
-    this.initializeCollectors();
+function failure(error: unknown, duration: number): CollectorResult {
+  let status: Exclude<CollectorResult['status'], 'ok'> = 'error';
+  if (error instanceof FingerprintError) {
+    if (error.code === 'UNSUPPORTED') status = 'unsupported';
+    if (error.code === 'BLOCKED') status = 'blocked';
+    if (error.code === 'COLLECTOR_TIMEOUT') status = 'timeout';
+    if (error.code === 'ABORTED') status = 'aborted';
+  } else if (error && typeof error === 'object' && 'name' in error) {
+    if (['NotAllowedError', 'SecurityError'].includes(String(error.name))) status = 'blocked';
+    if (error.name === 'NotSupportedError') status = 'unsupported';
+    if (error.name === 'AbortError') status = 'aborted';
   }
-
-  /**
-   * Initialize collectors based on options
-   */
-  private initializeCollectors(): void {
-    // Basic collectors (always included unless excluded)
-    if (!this.options.excludeUserAgent) {
-      this.collectors.push(new UserAgentCollector());
-    }
-
-    if (!this.options.excludeLanguage) {
-      this.collectors.push(new LanguageCollector());
-    }
-
-    if (!this.options.excludeTimezone) {
-      this.collectors.push(new TimezoneCollector());
-    }
-
-    if (!this.options.excludeScreenResolution) {
-      this.collectors.push(new ScreenCollector());
-    }
-
-    if (!this.options.excludePlugins) {
-      this.collectors.push(new PluginsCollector());
-    }
-
-    // Graphics collectors
-    if (!this.options.excludeCanvas) {
-      this.collectors.push(new CanvasCollector());
-    }
-
-    if (!this.options.excludeWebGL) {
-      this.collectors.push(new WebGLCollector());
-    }
-
-    // Advanced collectors
-    if (!this.options.excludeAudio) {
-      this.collectors.push(new AudioCollector());
-    }
-
-    if (!this.options.excludeFonts) {
-      this.collectors.push(new FontsCollector());
-    }
-
-    // New v2.0 collectors
-    if (!this.options.excludeHardware) {
-      this.collectors.push(new HardwareCollector());
-    }
-
-    if (!this.options.excludeWebRTC) {
-      this.collectors.push(new WebRTCCollector());
-    }
-
-    if (!this.options.excludeClientHints) {
-      this.collectors.push(new ClientHintsCollector());
-    }
-
-    if (!this.options.excludeStorage) {
-      this.collectors.push(new StorageCollector());
-    }
-
-    if (!this.options.excludeBattery) {
-      this.collectors.push(new BatteryCollector());
-    }
-
-    if (!this.options.excludeConnection) {
-      this.collectors.push(new ConnectionCollector());
-    }
-
-    if (!this.options.excludeTouch) {
-      this.collectors.push(new TouchCollector());
-    }
-
-    if (!this.options.excludePermissions) {
-      this.collectors.push(new PermissionsCollector());
-    }
-
-    if (!this.options.excludeMath) {
-      this.collectors.push(new MathCollector());
-    }
-
-    if (!this.options.excludeMediaDevices) {
-      this.collectors.push(new MediaDevicesCollector());
-    }
+  return { status, duration, reason: errorMessage(error) };
+}
+function validateObservation(value: unknown, name: string): void {
+  if (
+    value === undefined ||
+    value === 'unknown' ||
+    value === 'no-canvas' ||
+    value === 'no-canvas-context'
+  ) {
+    throw new FingerprintError(`${name} did not return an observation`, 'UNSUPPORTED', name);
   }
-
-  /**
-   * Normalize custom data to ensure stability by removing temporal values
-   */
-  private normalizeCustomData(
-    data: Record<string, unknown>
-  ): Record<string, unknown> {
-    if (!data || typeof data !== "object") {
-      return data;
+  if (value && typeof value === 'object') {
+    const data = value as Record<string, unknown>;
+    if (data.supported === false || data.hasMediaDevices === false || data.hasWebRTC === false) {
+      throw new FingerprintError(`${name} is unsupported`, 'UNSUPPORTED', name);
     }
-
-    const normalized = { ...data };
-
-    // List of keys that are known to cause instability
-    const unstableKeys = [
-      "timestamp",
-      "time",
-      "now",
-      "date",
-      "random",
-      "rand",
-      "nonce",
-      "salt",
-      "sessionId",
-      "requestId",
-      "uuid",
-      "performance",
-      "timing",
-    ];
-
-    // Remove unstable keys
-    for (const key of unstableKeys) {
-      if (key in normalized) {
-        delete normalized[key];
-      }
-    }
-
-    // Also check for values that look like timestamps or random data
-    for (const [key, value] of Object.entries(normalized)) {
-      if (typeof value === "number") {
-        // Remove values that look like timestamps (very large numbers)
-        if (value > 1000000000000 && value < 9999999999999) {
-          delete normalized[key];
-        }
-      }
-
-      if (typeof value === "string") {
-        // Remove UUIDs or similar patterns
-        if (
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-            value
-          )
-        ) {
-          delete normalized[key];
-        }
-      }
-    }
-
-    return normalized;
-  }
-
-  /**
-   * Calculate entropy from components
-   */
-  private calculateEntropy(components: Record<string, unknown>): number {
-    let totalEntropy = 0;
-
-    for (const collector of this.collectors) {
-      const data = components[collector.name];
-      if (data && !this.hasError(data)) {
-        totalEntropy += collector.metadata?.entropy || 2;
-      }
-    }
-
-    return totalEntropy;
-  }
-
-  /**
-   * Check if a component has an error
-   */
-  private hasError(data: unknown): boolean {
-    return (
-      data === "unknown" ||
-      data === "no-canvas" ||
-      (typeof data === "object" && data !== null && "error" in data)
-    );
-  }
-
-  /**
-   * Generate a fingerprint
-   */
-  async generate(): Promise<FingerprintResult> {
-    if (!isBrowser()) {
+    if (typeof data.error === 'string') {
       throw new FingerprintError(
-        "Fingerprinting is only available in browser environments",
-        "NOT_BROWSER"
+        data.error,
+        /timeout/i.test(data.error) ? 'COLLECTOR_TIMEOUT' : 'COLLECTOR_ERROR',
+        name,
       );
     }
+  }
+}
 
-    const startTime = performance.now();
-    const components: Record<string, unknown> = {};
-    const stableComponents: Record<string, unknown> = {}; // Only stable data for hashing
-    let confidence = 0;
+function validateSignal(signal: unknown): void {
+  if (
+    signal !== undefined &&
+    (!signal ||
+      typeof signal !== 'object' ||
+      !('aborted' in signal) ||
+      typeof signal.aborted !== 'boolean' ||
+      !('addEventListener' in signal) ||
+      typeof signal.addEventListener !== 'function' ||
+      !('removeEventListener' in signal) ||
+      typeof signal.removeEventListener !== 'function')
+  ) {
+    throw new FingerprintError('signal must be an AbortSignal', 'INVALID_INPUT');
+  }
+}
 
-    // Collect all components (in parallel for better performance)
-    const collectionPromises = this.collectors.map(async (collector) => {
+/** On-demand, local browser observations with a versioned SHA-256 projection. */
+export class Fingerprint {
+  private readonly options: FingerprintOptions;
+
+  constructor(options: FingerprintOptions = {}) {
+    if (!options || typeof options !== 'object' || Array.isArray(options)) {
+      throw new FingerprintError('Options must be an object', 'INVALID_INPUT');
+    }
+    this.options = {
+      ...DEFAULT_OPTIONS,
+      ...Object.fromEntries(Object.entries(options).filter(([, value]) => value !== undefined)),
+    };
+    validateSignal(this.options.signal);
+    if (!['minimal', 'balanced', 'diagnostic'].includes(this.options.profile ?? '')) {
+      throw new FingerprintError('Unknown collection profile', 'INVALID_INPUT');
+    }
+    for (const field of ['timeout', 'timeBudget'] as const) {
+      const value = this.options[field];
+      if (
+        typeof value !== 'number' ||
+        !Number.isFinite(value) ||
+        value <= 0 ||
+        value > 2147483647
+      ) {
+        throw new FingerprintError(
+          `${field} must be a positive timer-safe number`,
+          'INVALID_INPUT',
+        );
+      }
+    }
+    if (!['disabled', 'enabled'].includes(this.options.network ?? '')) {
+      throw new FingerprintError('network must be disabled or enabled', 'INVALID_INPUT');
+    }
+    if (this.options.namespace !== undefined && typeof this.options.namespace !== 'string') {
+      throw new FingerprintError('namespace must be a string', 'INVALID_INPUT');
+    }
+    if (this.options.collectors !== undefined) {
+      if (
+        !Array.isArray(this.options.collectors) ||
+        this.options.collectors.some(
+          (name) => !COLLECTOR_REGISTRY.some((entry) => entry.name === name),
+        )
+      ) {
+        throw new FingerprintError('Unknown collector selection', 'INVALID_INPUT');
+      }
+      this.options.collectors = [...new Set(this.options.collectors)];
+    }
+    for (const field of ['customData', 'fingerprintData'] as const) {
+      const value = this.options[field];
+      if (value !== undefined) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) {
+          throw new FingerprintError(`${field} must be a JSON object`, 'INVALID_INPUT');
+        }
+        this.options[field] = snapshot(value);
+      }
+    }
+    if (
+      this.options.customCollectors !== undefined &&
+      !Array.isArray(this.options.customCollectors)
+    ) {
+      throw new FingerprintError('customCollectors must be an array', 'INVALID_INPUT');
+    }
+    const names = new Set<string>(COLLECTOR_REGISTRY.map((entry) => entry.name));
+    for (const collector of this.options.customCollectors ?? []) {
+      if (
+        !collector ||
+        typeof collector !== 'object' ||
+        typeof collector.name !== 'string' ||
+        !collector.metadata ||
+        typeof collector.metadata !== 'object' ||
+        collector.metadata.name !== collector.name ||
+        typeof collector.metadata.stable !== 'boolean' ||
+        !['browser', 'hardware', 'network', 'graphics', 'audio', 'storage', 'permissions'].includes(
+          collector.metadata.category,
+        ) ||
+        (collector.project !== undefined && typeof collector.project !== 'function') ||
+        !/^[A-Za-z][A-Za-z0-9_-]*$/.test(collector.name) ||
+        names.has(collector.name) ||
+        ['constructor', 'prototype', 'custom', 'automation'].includes(collector.name) ||
+        typeof collector.collect !== 'function' ||
+        typeof collector.isSupported !== 'function'
+      ) {
+        throw new FingerprintError(
+          'Custom collector names must be unique, safe and non-reserved',
+          'INVALID_INPUT',
+        );
+      }
+      names.add(collector.name);
+    }
+    this.options.customCollectors = [...(this.options.customCollectors ?? [])];
+    if (this.options.iceServers !== undefined && !Array.isArray(this.options.iceServers)) {
+      throw new FingerprintError('iceServers must be an array', 'INVALID_INPUT');
+    }
+    this.options.iceServers = this.options.iceServers ? snapshot(this.options.iceServers) : [];
+  }
+
+  private async collect(options: GenerationOptions): Promise<Collection> {
+    if (!isBrowser())
+      throw new FingerprintError('Collection requires a browser environment', 'NOT_BROWSER');
+    if (!options || typeof options !== 'object' || Array.isArray(options)) {
+      throw new FingerprintError('Generation options must be an object', 'INVALID_INPUT');
+    }
+    const signal = options.signal ?? this.options.signal;
+    validateSignal(signal);
+    const started = now();
+    const deadline = started + (this.options.timeBudget ?? DEFAULT_OPTIONS.timeBudget);
+    const components = Object.create(null) as Components;
+    const collectorResults = Object.create(null) as CollectorResults;
+    const projected = Object.create(null) as Record<string, unknown>;
+    const automation =
+      this.options.includeSuspectAnalysis && !signal?.aborted
+        ? collectAutomationSnapshot()
+        : undefined;
+    const tasks: Task[] = [];
+    for (const entry of COLLECTOR_REGISTRY) {
+      const enabled = this.options.collectors
+        ? this.options.collectors.includes(entry.name)
+        : entry.profiles.includes(this.options.profile ?? DEFAULT_OPTIONS.profile);
+      if (!enabled || this.options[entry.exclude] === true) {
+        collectorResults[entry.name] = {
+          status: 'excluded',
+          duration: 0,
+          reason: 'Not selected by this configuration',
+        };
+        continue;
+      }
+      tasks.push({
+        collector: entry.create(this.options),
+        project: entry.project,
+        ...(entry.network && this.options.network !== 'enabled'
+          ? { blocked: 'Network collection is disabled' }
+          : {}),
+      });
+    }
+    for (const collector of this.options.customCollectors ?? []) {
+      tasks.push({
+        collector,
+        project: collector.project ? (value) => collector.project?.(value) : undefined,
+        ...(collector.metadata.network && this.options.network !== 'enabled'
+          ? { blocked: 'Network collection is disabled' }
+          : {}),
+      });
+    }
+    const globalController = new AbortController();
+    let stopCode: 'ABORTED' | 'COLLECTOR_TIMEOUT' = 'COLLECTOR_TIMEOUT';
+    const cancel = (): void => {
+      stopCode = 'ABORTED';
+      globalController.abort();
+    };
+    const budgetTimer = setTimeout(() => globalController.abort(), Math.max(0, deadline - now()));
+    if (signal?.aborted) cancel();
+    else signal?.addEventListener('abort', cancel, { once: true });
+    let succeeded = 0;
+    const run = async ({ collector, project, blocked }: Task): Promise<void> => {
+      const begin = now();
+      const localDeadline = Math.min(
+        begin + (this.options.timeout ?? DEFAULT_OPTIONS.timeout),
+        deadline,
+      );
+      const controller = new AbortController();
+      const cleanups: Array<() => void> = [];
+      let finished = false;
+      let localCode: 'ABORTED' | 'COLLECTOR_TIMEOUT' = 'COLLECTOR_TIMEOUT';
+      const stop = (): void => {
+        localCode = stopCode;
+        controller.abort();
+      };
+      const timeout = (): void => {
+        localCode = 'COLLECTOR_TIMEOUT';
+        controller.abort();
+      };
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      let abortListener: (() => void) | undefined;
+      const stopped = (): FingerprintError =>
+        new FingerprintError(
+          localCode === 'ABORTED' ? 'Collection cancelled' : 'Collection deadline exceeded',
+          localCode,
+          collector.name,
+        );
+      const assertActive = (): void => {
+        if (globalController.signal.aborted) {
+          localCode = stopCode;
+          controller.abort();
+        }
+        if (controller.signal.aborted) throw stopped();
+        // Synchronous work and promise microtasks can finish before timer callbacks run.
+        if (now() >= localDeadline) {
+          localCode = 'COLLECTOR_TIMEOUT';
+          controller.abort();
+          throw stopped();
+        }
+      };
+      const context: CollectorContext = {
+        signal: controller.signal,
+        onCleanup: (cleanup) => {
+          if (finished) cleanup();
+          else cleanups.push(cleanup);
+        },
+      };
       try {
-        const data = await collector.collect();
-        return { 
-          name: collector.name, 
-          data, 
-          error: null,
-          stable: collector.metadata?.stable ?? true 
-        };
+        assertActive();
+        if (blocked) throw new FingerprintError(blocked, 'BLOCKED', collector.name);
+        globalController.signal.addEventListener('abort', stop, { once: true });
+        timer = setTimeout(timeout, Math.max(0, localDeadline - now()));
+        const cancellation = new Promise<never>((_resolve, reject) => {
+          abortListener = (): void => reject(stopped());
+          controller.signal.addEventListener('abort', abortListener, { once: true });
+        });
+        const work = Promise.resolve().then(() => {
+          assertActive();
+          if (!collector.isSupported())
+            throw new FingerprintError(
+              `${collector.name} is unsupported`,
+              'UNSUPPORTED',
+              collector.name,
+            );
+          assertActive();
+          return collector.collect(context);
+        });
+        const data = await Promise.race([work, cancellation]);
+        assertActive();
+        validateObservation(data, collector.name);
+        assertActive();
+        const value = snapshot(data);
+        assertActive();
+        let projectedValue: unknown;
+        if (project) {
+          const projection = project(value);
+          assertActive();
+          if (projection !== undefined) projectedValue = snapshot(projection);
+        }
+        assertActive();
+        if (projectedValue !== undefined) projected[collector.name] = projectedValue;
+        Object.assign(components, { [collector.name]: value });
+        collectorResults[collector.name] = { status: 'ok', duration: now() - begin, value };
+        succeeded++;
       } catch (error) {
-        return {
-          name: collector.name,
-          data: null,
-          error: (error as Error).message,
-          stable: collector.metadata?.stable ?? true
-        };
-      }
-    });
-
-    const results = await Promise.all(collectionPromises);
-
-    // Process results
-    for (const result of results) {
-      if (result.error) {
-        components[result.name] = { error: result.error };
-      } else {
-        components[result.name] = result.data;
-        
-        // Only add stable components to the hash source
-        if (result.stable && !this.hasError(result.data)) {
-          stableComponents[result.name] = result.data;
+        let cause = error;
+        try {
+          assertActive();
+        } catch (interruption) {
+          cause = interruption;
         }
-        
-        if (!this.hasError(result.data)) {
-          confidence += 1;
+        collectorResults[collector.name] = failure(cause, now() - begin);
+      } finally {
+        finished = true;
+        if (timer !== undefined) clearTimeout(timer);
+        globalController.signal.removeEventListener('abort', stop);
+        if (abortListener) controller.signal.removeEventListener('abort', abortListener);
+        // A collector may ignore cancellation; registered resources still belong to this invocation.
+        for (const cleanup of cleanups.reverse()) {
+          try {
+            cleanup();
+          } catch {
+            /* best-effort release */
+          }
         }
       }
+    };
+    try {
+      if (this.options.parallel) await Promise.all(tasks.map(run));
+      else for (const task of tasks) await run(task);
+    } finally {
+      clearTimeout(budgetTimer);
+      signal?.removeEventListener('abort', cancel);
     }
+    if (this.options.customData !== undefined)
+      components.custom = snapshot(this.options.customData);
+    if (automation !== undefined) components.automation = automation;
+    return { components, collectorResults, projected, selected: tasks.length, succeeded, started };
+  }
 
-    // Add custom data if provided
-    if (this.options.customData) {
-      let customDataToUse = this.options.customData;
-
-      if (!this.options.allowUnstableData) {
-        customDataToUse = this.normalizeCustomData(this.options.customData);
+  /** Cancellation returns observable partial results with aborted collector statuses. */
+  async generate(options: GenerationOptions = {}): Promise<FingerprintResult> {
+    const collection = await this.collect(options);
+    const { projected, collectorResults, selected, succeeded } = collection;
+    const hashComponents = Object.keys(projected).sort();
+    const source = {
+      schema: FINGERPRINT_VERSION,
+      namespace: this.options.namespace ?? 'fingerprinter-js',
+      components: projected,
+      ...(this.options.fingerprintData !== undefined ? { data: this.options.fingerprintData } : {}),
+    };
+    const fingerprint = await sha256(safeStringify(source));
+    const collectionCoverage = selected === 0 ? 0 : Math.round((succeeded / selected) * 100);
+    const suspectAnalysis = this.options.includeSuspectAnalysis
+      ? SuspectAnalyzer.analyze(collection.components)
+      : undefined;
+    const include = options.includeComponents ?? this.options.includeComponents;
+    if (!include) {
+      for (const [name, result] of Object.entries(collectorResults)) {
+        if (result.status === 'ok')
+          collectorResults[name] = { status: 'ok', duration: result.duration };
       }
-
-      if (Object.keys(customDataToUse).length > 0) {
-        components.custom = customDataToUse;
-        stableComponents.custom = customDataToUse; // Custom data is user-controlled
-        confidence += 0.5;
-      }
     }
-
-    // Calculate confidence percentage
-    const maxConfidence =
-      this.collectors.length + (this.options.customData ? 0.5 : 0);
-    const confidencePercentage = Math.round((confidence / maxConfidence) * 100);
-
-    // Calculate entropy (from all components)
-    const entropy = this.calculateEntropy(components);
-
-    // Generate fingerprint hash from STABLE components only
-    const dataString = safeStringify(stableComponents);
-    const fingerprint = await sha256(dataString);
-
-    // Calculate duration
-    const duration = performance.now() - startTime;
-
-    // Generate suspect analysis if requested (uses all components)
-    let suspectAnalysis = undefined;
-    if (this.options.includeSuspectAnalysis) {
-      suspectAnalysis = SuspectAnalyzer.analyze(components);
-    }
-
     return {
       fingerprint,
-      components, // Returns ALL components for visibility
-      confidence: confidencePercentage,
-      entropy,
-      duration,
+      fingerprintVersion: FINGERPRINT_VERSION,
+      hashComponents,
+      quality:
+        hashComponents.length === 0 && !Object.keys(this.options.fingerprintData ?? {}).length
+          ? 'empty'
+          : succeeded === selected
+            ? 'complete'
+            : 'partial',
+      components: include ? collection.components : {},
+      collectorResults,
+      collectionCoverage,
+      confidence: collectionCoverage,
+      entropy: null,
+      duration: now() - collection.started,
       version: VERSION,
-      suspectAnalysis,
+      ...(suspectAnalysis ? { suspectAnalysis } : {}),
     };
   }
 
-  /**
-   * Get component data without generating hash
-   */
-  async getComponents(): Promise<Record<string, unknown>> {
-    if (!isBrowser()) {
-      throw new FingerprintError(
-        "Fingerprinting is only available in browser environments",
-        "NOT_BROWSER"
-      );
-    }
-
-    const components: Record<string, unknown> = {};
-
-    // Collect all components in parallel
-    const collectionPromises = this.collectors.map(async (collector) => {
-      try {
-        const data = await collector.collect();
-        return { name: collector.name, data };
-      } catch (error) {
-        return { name: collector.name, data: { error: (error as Error).message } };
-      }
-    });
-
-    const results = await Promise.all(collectionPromises);
-
-    for (const result of results) {
-      components[result.name] = result.data;
-    }
-
-    if (this.options.customData) {
-      let customDataToUse = this.options.customData;
-
-      if (!this.options.allowUnstableData) {
-        customDataToUse = this.normalizeCustomData(this.options.customData);
-      }
-
-      if (Object.keys(customDataToUse).length > 0) {
-        components.custom = customDataToUse;
-      }
-    }
-
-    return components;
+  /** Uses the same selection, lifecycle and deadline engine as generate(). */
+  async getComponents(options: GenerationOptions = {}): Promise<Components> {
+    const result = await this.collect(options);
+    return (options.includeComponents ?? this.options.includeComponents) ? result.components : {};
   }
-
-  /**
-   * Static method to quickly generate a fingerprint with default options
-   */
-  static async generate(
-    options: FingerprintOptions = {}
-  ): Promise<FingerprintResult> {
-    const fp = new Fingerprint(options);
-    return fp.generate();
+  static generate(options: FingerprintOptions = {}): Promise<FingerprintResult> {
+    return new Fingerprint(options).generate();
   }
-
-  /**
-   * Static method to get available collectors
-   */
   static getAvailableCollectors(): string[] {
-    return [
-      // Basic
-      "userAgent",
-      "language",
-      "timezone",
-      "screen",
-      "plugins",
-      // Graphics
-      "canvas",
-      "webgl",
-      // Advanced
-      "audio",
-      "fonts",
-      // New v2.0
-      "hardware",
-      "webrtc",
-      "clientHints",
-      "storage",
-      "battery",
-      "connection",
-      "touch",
-      "permissions",
-      "math",
-      "mediaDevices",
-    ];
+    return COLLECTOR_REGISTRY.map((entry) => entry.name);
   }
-
-  /**
-   * Get version
-   */
+  static getCollectorMetadata(): CollectorDescriptor[] {
+    return getCollectorMetadata();
+  }
   static getVersion(): string {
     return VERSION;
   }
 }
-
-// Export for convenience
+export function createFingerprinter(options: FingerprintOptions = {}): Fingerprint {
+  return new Fingerprint(options);
+}
 export default Fingerprint;

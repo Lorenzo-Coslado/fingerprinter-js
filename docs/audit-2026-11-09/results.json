@@ -1,0 +1,399 @@
+{
+  "date": "2026-11-09",
+  "timezone": "Europe/Paris",
+  "commit": "a9ba5f02ce6fad4139a32130fa367b0781493b6a",
+  "runtime": {
+    "node": "v26.13.0",
+    "npm": "11.20.0"
+  },
+  "checks": {
+    "build": "pass with mixed-exports warning",
+    "typecheckLibrary": "pass",
+    "lint": "fails: cannot resolve @typescript-eslint/recommended",
+    "tests": {
+      "passed": 25,
+      "suites": 3
+    },
+    "coverage": {
+      "lines": {
+        "total": 711,
+        "covered": 402,
+        "skipped": 0,
+        "pct": 56.54
+      },
+      "statements": {
+        "total": 794,
+        "covered": 427,
+        "skipped": 0,
+        "pct": 53.77
+      },
+      "functions": {
+        "total": 208,
+        "covered": 108,
+        "skipped": 0,
+        "pct": 51.92
+      },
+      "branches": {
+        "total": 358,
+        "covered": 120,
+        "skipped": 0,
+        "pct": 33.51
+      },
+      "branchesTrue": {
+        "total": 0,
+        "covered": 0,
+        "skipped": 0,
+        "pct": 100
+      }
+    },
+    "analyzerLineCoverage": 0.62,
+    "constantHashMutation": {
+      "numPassedTests": 25,
+      "numFailedTests": 0,
+      "numTotalTests": 25
+    },
+    "npmAudit": {
+      "info": 0,
+      "low": 8,
+      "moderate": 1,
+      "high": 12,
+      "critical": 0,
+      "total": 21
+    },
+    "npmAuditProduction": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "bundleSizes": [
+    {
+      "file": "dist/index.js",
+      "bytes": 67848,
+      "gzipBytes": 13792
+    },
+    {
+      "file": "dist/index.esm.js",
+      "bytes": 67011,
+      "gzipBytes": 13615
+    },
+    {
+      "file": "dist/index.umd.js",
+      "bytes": 72295,
+      "gzipBytes": 14067
+    }
+  ],
+  "consumerResults": [
+    {
+      "command": [
+        "node",
+        "-e",
+        "console.log(require('fingerprinter-js').VERSION)"
+      ],
+      "exit": 0,
+      "stdout": "2.0.0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { Fingerprint } from 'fingerprinter-js'; console.log(Fingerprint.getVersion())"
+      ],
+      "exit": 0,
+      "stdout": "2.0.0\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "node",
+        "--input-type=module",
+        "-e",
+        "import { CanvasCollector } from 'fingerprinter-js/collectors'; console.log(CanvasCollector.name)"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "node:internal/modules/esm/resolve:241\n    throw new ERR_MODULE_NOT_FOUND(\n          ^\n\nError [ERR_MODULE_NOT_FOUND]: Cannot find module '<consumer>/node_modules/fingerprinter-js/dist/collectors/index.js' imported from <consumer>/[eval1]\n    at finalizeResolution (node:internal/modules/esm/resolve:241:11)\n    at moduleResolve (node:internal/modules/esm/resolve:846:10)\n    at defaultResolve (node:internal/modules/esm/resolve:973:11)\n    at #cachedDefaultResolve (node:internal/modules/esm/loader:708:20)\n    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:728:38)\n    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:766:56)\n    at #resolve (node:internal/modules/esm/loader:690:17)\n    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:610:35)\n    at ModuleJob.syncLink (node:internal/modules/esm/module_job:277:33)\n    at ModuleJob.link (node:internal/modules/esm/module_job:389:17) {\n  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file://<consumer>/node_modules/fingerprinter-js/dist/collectors/index.js'\n}\n\nNode.js v26.13.0\n"
+    },
+    {
+      "command": [
+        "node",
+        "-e",
+        "console.log(require('fingerprinter-js/collectors'))"
+      ],
+      "exit": 1,
+      "stdout": "",
+      "stderr": "node:internal/modules/cjs/loader:772\n      throw e;\n      ^\n\nError [ERR_PACKAGE_PATH_NOT_EXPORTED]: Package subpath './collectors' is not defined by \"exports\" in <consumer>/node_modules/fingerprinter-js/package.json\n    at exportsNotFound (node:internal/modules/esm/resolve:282:10)\n    at packageExportsResolve (node:internal/modules/esm/resolve:573:13)\n    at resolveExports (node:internal/modules/cjs/loader:765:36)\n    at Module._findPath (node:internal/modules/cjs/loader:832:31)\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1596:27)\n    at wrapResolveFilename (node:internal/modules/cjs/loader:1145:27)\n    at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1169:10)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1196:12)\n    at Module._load (node:internal/modules/cjs/loader:1370:5)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:261:19) {\n  code: 'ERR_PACKAGE_PATH_NOT_EXPORTED'\n}\n\nNode.js v26.13.0\n"
+    }
+  ],
+  "typeConsumerResults": [
+    {
+      "mode": "nodenext",
+      "exit": 2,
+      "output": "consumer.mts(2,15): error TS2351: This expression is not constructable.\n  Type 'typeof import(\"<consumer>/node_modules/fingerprinter-js/dist/index\")' has no construct signatures.\n"
+    },
+    {
+      "mode": "bundler",
+      "exit": 0,
+      "output": ""
+    }
+  ],
+  "browserResults": [
+    {
+      "engine": "chromium",
+      "version": "158.0.8127.18",
+      "stableRepeated": true,
+      "durationMs": [
+        1446,
+        131,
+        125
+      ],
+      "confidences": [
+        100,
+        100,
+        100
+      ],
+      "entropies": [
+        141,
+        141,
+        141
+      ],
+      "changedComponentNames": [
+        "audio"
+      ],
+      "failures": [
+        [],
+        [],
+        []
+      ],
+      "storageProbe": {
+        "localItemAfter": null,
+        "sessionItemAfter": null
+      },
+      "emptyConfidenceFinite": false,
+      "emptyHashLength": 64,
+      "idOnlyConfidence": 100,
+      "unsupportedSummary": [],
+      "withoutAudioAndWebRTCDurationMs": 4,
+      "normalHashLength": 64,
+      "stableAfterReload": true,
+      "changedOnReload": [],
+      "pageErrors": []
+    },
+    {
+      "engine": "firefox",
+      "version": "159.0",
+      "stableRepeated": true,
+      "durationMs": [
+        405,
+        117,
+        119
+      ],
+      "confidences": [
+        100,
+        100,
+        100
+      ],
+      "entropies": [
+        141,
+        141,
+        141
+      ],
+      "changedComponentNames": [
+        "audio"
+      ],
+      "failures": [
+        [],
+        [],
+        []
+      ],
+      "storageProbe": {
+        "localItemAfter": null,
+        "sessionItemAfter": null
+      },
+      "emptyConfidenceFinite": false,
+      "emptyHashLength": 64,
+      "idOnlyConfidence": 100,
+      "unsupportedSummary": [
+        "battery",
+        "connection"
+      ],
+      "withoutAudioAndWebRTCDurationMs": 47,
+      "normalHashLength": 64,
+      "stableAfterReload": true,
+      "changedOnReload": [
+        "audio"
+      ],
+      "pageErrors": []
+    },
+    {
+      "engine": "webkit",
+      "version": "27.2",
+      "stableRepeated": true,
+      "durationMs": [
+        474,
+        115,
+        110
+      ],
+      "confidences": [
+        100,
+        100,
+        100
+      ],
+      "entropies": [
+        141,
+        141,
+        141
+      ],
+      "changedComponentNames": [
+        "audio"
+      ],
+      "failures": [
+        [],
+        [],
+        []
+      ],
+      "storageProbe": {
+        "localItemAfter": null,
+        "sessionItemAfter": null
+      },
+      "emptyConfidenceFinite": false,
+      "emptyHashLength": 64,
+      "idOnlyConfidence": 100,
+      "unsupportedSummary": [
+        "battery",
+        "connection"
+      ],
+      "withoutAudioAndWebRTCDurationMs": 8,
+      "normalHashLength": 64,
+      "stableAfterReload": true,
+      "changedOnReload": [],
+      "pageErrors": []
+    }
+  ],
+  "reproductions": {
+    "customKeyOrder": {
+      "sameHash": false,
+      "componentsA": {
+        "fixture": "fixed",
+        "custom": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      "componentsB": {
+        "fixture": "fixed",
+        "custom": {
+          "b": 2,
+          "a": 1
+        }
+      }
+    },
+    "nestedTimestamp": {
+      "sameHash": false,
+      "componentsA": {
+        "fixture": "fixed",
+        "custom": {
+          "meta": {
+            "timestamp": 1
+          }
+        }
+      },
+      "componentsB": {
+        "fixture": "fixed",
+        "custom": {
+          "meta": {
+            "timestamp": 2
+          }
+        }
+      }
+    },
+    "uuidUserId": {
+      "sameHash": true,
+      "componentsA": {
+        "fixture": "fixed"
+      },
+      "componentsB": {
+        "fixture": "fixed"
+      }
+    },
+    "emptyCollectors": {
+      "confidence": null,
+      "finiteConfidence": false,
+      "fingerprint": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+    },
+    "unsupported": {
+      "confidence": 100,
+      "entropy": 15,
+      "components": {
+        "canvas": "no-canvas-context",
+        "battery": {
+          "supported": false
+        },
+        "mediaDevices": {
+          "hasMediaDevices": false,
+          "audioInputs": 0,
+          "audioOutputs": 0,
+          "videoInputs": 0
+        }
+      }
+    },
+    "repeatedReference": {
+      "shared": "{\"a\":{\"v\":1},\"b\":\"[Circular]\"}",
+      "duplicated": "{\"a\":{\"v\":1},\"b\":{\"v\":1}}"
+    },
+    "sha256Fallback": {
+      "hashA": "840",
+      "hashB": "840",
+      "length": 5
+    },
+    "options": {
+      "startedImmediately": [
+        "a",
+        "b"
+      ],
+      "durationMs": 62
+    },
+    "hung": "still pending after 50 ms with timeout=1",
+    "analysis": {
+      "normal": {
+        "score": 30,
+        "riskLevel": "MEDIUM",
+        "signals": [
+          "too_perfect"
+        ]
+      },
+      "empty": {
+        "score": 90,
+        "riskLevel": "HIGH",
+        "signals": [
+          "missing_apis",
+          "too_perfect"
+        ]
+      },
+      "excludedTwoBasics": {
+        "score": 90,
+        "riskLevel": "HIGH",
+        "signals": [
+          "missing_apis",
+          "too_perfect"
+        ]
+      }
+    },
+    "version": {
+      "package": "2.0.1",
+      "sdk": "2.0.0"
+    }
+  },
+  "publication": {
+    "run": "https://github.com/Lorenzo-Coslado/fingerprinter-js/actions/runs/21534370220",
+    "test": "success",
+    "publish-npm": "failure",
+    "publish-github": "failure",
+    "jobLogs": "unavailable (HTTP 410)"
+  }
+}

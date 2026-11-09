@@ -1,63 +1,36 @@
-/**
- * Permissions Collector
- * Checks permission states for various APIs
- */
+import { FingerprintError } from '../types';
+import type { CollectorContext, PermissionsData } from '../types';
+import { AsyncBaseCollector, BaseCollector } from './base';
 
-import { CollectorMetadata, PermissionsData } from "../types";
-import { AsyncBaseCollector, BaseCollector } from "./base";
-
-/**
- * Permissions Collector
- * Uses Permissions API to check permission states
- */
 export class PermissionsCollector extends AsyncBaseCollector<PermissionsData> {
-  readonly name = "permissions";
-  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
-    "permissions",
-    {
-      weight: 4,
-      entropy: 5,
-      stable: false, // Permissions can change
-      category: "permissions",
-    }
-  );
-
+  readonly name = 'permissions';
+  readonly metadata = BaseCollector.createMetadata(this.name, {
+    category: 'permissions',
+    stable: false,
+  });
   isSupported(): boolean {
-    return (
-      super.isSupported() &&
-      "permissions" in navigator &&
-      typeof navigator.permissions.query === "function"
-    );
+    return super.isSupported() && typeof navigator.permissions?.query === 'function';
   }
-
-  async collect(): Promise<PermissionsData> {
-    if (!this.isSupported()) {
-      return {};
-    }
-
-    const permissionNames = [
-      "notifications",
-      "geolocation",
-      "camera",
-      "microphone",
-      "push",
-    ] as const;
-
+  async collect(context?: CollectorContext): Promise<PermissionsData> {
+    this.requireSupported(context);
     const result: PermissionsData = {};
-
-    await Promise.all(
-      permissionNames.map(async (name) => {
-        try {
-          const permission = await navigator.permissions.query({
-            name: name as PermissionName,
-          });
-          result[name] = permission.state;
-        } catch {
-          // Some permissions may not be queryable
-        }
-      })
+    await this.withTimeout(
+      Promise.all(
+        (['notifications', 'geolocation', 'camera', 'microphone'] as const).map(async (name) => {
+          try {
+            result[name] = (
+              await navigator.permissions.query({ name: name as PermissionName })
+            ).state;
+          } catch {
+            /* Per-permission support differs; a failure is not a denied permission. */
+          }
+        }),
+      ),
+      undefined,
+      context?.signal,
     );
-
+    if (!Object.keys(result).length)
+      throw new FingerprintError('No queried permission is available', 'UNSUPPORTED', this.name);
     return result;
   }
 }

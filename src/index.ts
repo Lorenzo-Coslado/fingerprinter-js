@@ -1,43 +1,25 @@
-/**
- * FingerprinterJS v2.0
- * Main Entry Point
- */
-
-// Main exports
-export { Fingerprint, Fingerprint as default } from "./fingerprint";
-
-// Type exports
+/** Browser collection is on demand; importing the package is safe during SSR. */
+export { Fingerprint, Fingerprint as default, createFingerprinter } from './fingerprint';
+export * from './types';
+export { SuspectAnalyzer, ANALYSIS_RULES_VERSION } from './suspect-analyzer';
 export type {
-    AudioData, BatteryData, ClientHintsData, CollectorMetadata,
-    CollectorResult, ComponentCollector, ConnectionData, FingerprintOptions,
-    FingerprintResult, HardwareData, MathData,
-    MediaDevicesData, PermissionsData,
-    // Component types
-    ScreenData, StorageData, TouchData, WebGLData, WebRTCData
-} from "./types";
-
-export { FingerprintError, VERSION } from "./types";
-
-// Suspect analysis exports
-export { SuspectAnalyzer } from "./suspect-analyzer";
-export type { SuspectAnalysis, SuspectSignal } from "./suspect-analyzer";
-
-// Utility exports
-export { isBrowser, safeGet, safeStringify, sha256, simpleHash } from "./utils";
-
-// Collector exports for advanced usage
+  SuspectAnalysis,
+  SuspectSignal,
+  SignalCategory,
+  AnalysisStatus,
+  AutomationSnapshot,
+  SuspectAnalysisDetails,
+} from './suspect-analyzer';
 export {
-    AsyncBaseCollector,
-    // Advanced
-    AudioCollector,
-    // Base
-    BaseCollector, BatteryCollector,
-    // Graphics
-    CanvasCollector, ClientHintsCollector, ConnectionCollector, FontsCollector,
-    // New v2.0
-    HardwareCollector, LanguageCollector, MathCollector,
-    MediaDevicesCollector, PermissionsCollector, PluginsCollector, ScreenCollector, StorageCollector, TimezoneCollector, TouchCollector,
-    // Basic
-    UserAgentCollector, WebGLCollector, WebRTCCollector
-} from "./collectors";
-
+  canonicalStringify,
+  safeStringify,
+  sha256,
+  sha256Fallback,
+  simpleHash,
+  isBrowser,
+  safeGet,
+  compareComponents,
+  compareFingerprints,
+} from './utils';
+export * from './collectors';
+export { getCollectorMetadata } from './collectors/registry';

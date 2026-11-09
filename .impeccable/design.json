@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-09T02:04:18.389645+00:00",
+  "title": "Design System: FingerprinterJS",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Zinc foreground"
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "White reading surface"
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted zinc"
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Collected green"
+      }
+    },
+    "shadows": [
+      {
+        "name": "toast",
+        "value": "0 3px 14px #0000001a",
+        "purpose": "Transient feedback only; panels are flat."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "160ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "Hover and control state transitions."
+      },
+      {
+        "name": "flow",
+        "value": "700ms linear",
+        "purpose": "User-triggered explanation flow, disabled with reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-desktop",
+        "value": "900px"
+      },
+      {
+        "name": "stacked",
+        "value": "680px"
+      },
+      {
+        "name": "small-phone",
+        "value": "370px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The explicit collection action.",
+      "html": "<button class=\"ds-primary\">Generate fingerprint</button>",
+      "css": ".ds-primary{font:500 12px/1.5 -apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;color:var(--primary-foreground,#fafafa);background:var(--primary,#18181b);border:1px solid transparent;border-radius:6px;min-height:36px;padding:7px 12px;cursor:pointer}.ds-primary:hover{opacity:.88}.ds-primary:active{opacity:.78}.ds-primary:focus-visible{outline:2px solid var(--focus,#52525b);outline-offset:3px}.ds-primary:disabled{opacity:.48;cursor:not-allowed}"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Explicit supporting actions.",
+      "html": "<button class=\"ds-secondary\">Copy code</button>",
+      "css": ".ds-secondary{font:500 12px/1.5 -apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;color:var(--foreground,#18181b);background:var(--background,#fff);border:1px solid var(--border,#e4e4e7);border-radius:6px;min-height:36px;padding:7px 12px;cursor:pointer}.ds-secondary:hover{background:var(--surface-hover,#f4f4f5);border-color:var(--strong-border,#d4d4d8)}.ds-secondary:focus-visible{outline:2px solid var(--focus,#52525b);outline-offset:3px}"
+    },
+    {
+      "name": "Numeric input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "An explicitly labelled collection budget.",
+      "html": "<label class=\"ds-label\">Total collection budget<input class=\"ds-input\" type=\"number\" value=\"1500\" aria-label=\"Total collection budget in milliseconds\"/></label>",
+      "css": ".ds-label{display:grid;gap:7px;font:400 12px/1.5 -apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;color:var(--foreground,#18181b)}.ds-input{font:12px ui-monospace,monospace;min-height:34px;padding:5px 10px;border:1px solid var(--strong-border,#d4d4d8);border-radius:6px;background:var(--background,#fff);color:var(--foreground,#18181b);caret-color:var(--foreground,#18181b)}.ds-input:focus-visible{outline:2px solid var(--focus,#52525b);outline-offset:3px}"
+    },
+    {
+      "name": "Task navigation",
+      "kind": "nav",
+      "description": "Familiar tabs separating operation and explanation.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Playground sections\"><button class=\"ds-tab\" aria-current=\"page\">Playground</button><button class=\"ds-tab\">How it works</button></nav>",
+      "css": ".ds-nav{display:flex;gap:26px;border-bottom:1px solid var(--border,#e4e4e7)}.ds-tab{font:500 13px/1.5 -apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;background:transparent;color:var(--muted,#626269);border:0;border-bottom:2px solid transparent;padding:12px 0;cursor:pointer}.ds-tab[aria-current=page]{color:var(--foreground,#18181b);border-bottom-color:var(--foreground,#18181b)}.ds-tab:hover{color:var(--foreground,#18181b)}.ds-tab:focus-visible{outline:2px solid var(--focus,#52525b);outline-offset:3px}"
+    },
+    {
+      "name": "Collection status",
+      "kind": "chip",
+      "description": "A real collector success state, never a measure of identity accuracy.",
+      "html": "<span class=\"ds-collected\">Collected</span>",
+      "css": ".ds-collected{display:inline-block;font:400 10px/1.5 -apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;padding:2px 6px;border:1px solid var(--border,#e4e4e7);border-radius:4px;color:var(--success,#147d49);background:var(--success-surface,#f0fdf4)}"
+    },
+    {
+      "name": "Result container",
+      "kind": "card",
+      "description": "A flat bordered result with a clear heading.",
+      "html": "<section class=\"ds-result\"><h2 class=\"ds-heading\">Collection result</h2><p class=\"ds-empty\">No fingerprint yet. Start a collection to inspect this browser.</p></section>",
+      "css": ".ds-result{border:1px solid var(--border,#e4e4e7);border-radius:9px;color:var(--foreground,#18181b);background:var(--background,#fff);overflow:hidden;font:14px/1.55 -apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif}.ds-heading{font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e4e4e7);margin:0;padding:17px 22px}.ds-empty{font-size:12px;color:var(--muted,#626269);margin:0;padding:28px 22px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Inspectable by default",
+    "overview": "A familiar, quiet developer interface with a zinc neutral palette, clear hierarchy, and real results at the center. The design follows the user's request for a simple shadcn-style page. It uses standard controls rather than a new visual language that developers must learn.",
+    "keyCharacteristics": [
+      "Flat, bordered surfaces with controlled information density.",
+      "A visible primary action before advanced configuration.",
+      "Color reserved for meaningful collection and check states.",
+      "Expandable observations, explicit uncertainty, and no decorative metrics."
+    ],
+    "rules": [
+      {
+        "name": "The State Color Rule",
+        "body": "Green, amber, and red describe a real status. They do not decorate idle sections or imply identification accuracy.",
+        "section": "colors"
+      },
+      {
+        "name": "The Data Type Rule",
+        "body": "Monospace identifies code and measured data, not the fact that the product is technical.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do keep the primary action visible before advanced options.",
+      "Do name uncertainty and non-success states clearly.",
+      "Do make expanded data readable at the viewport's full available width.",
+      "Do keep light and dark themes structurally identical."
+    ],
+    "donts": [
+      "Don't use gradients, emoji, decorative statistics, or marketing claims as UI structure.",
+      "Don't label collection coverage as accuracy or confidence in a person's identity.",
+      "Don't animate the page into existence or collect data on page load.",
+      "Don't render observations with HTML interpolation."
+    ]
+  }
+}

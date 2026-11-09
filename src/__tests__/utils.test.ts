@@ -1,88 +1,116 @@
-import { safeGet, safeStringify, sha256, simpleHash } from "../utils";
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
+import {
+  canonicalStringify,
+  compareComponents,
+  safeGet,
+  safeStringify,
+  sha256,
+  sha256Fallback,
+  simpleHash,
+} from '../utils';
 
-describe("Utils", () => {
-  describe("simpleHash", () => {
-    it("should generate consistent hash for same input", () => {
-      const input = "test string";
-      const hash1 = simpleHash(input);
-      const hash2 = simpleHash(input);
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
-      expect(hash1).toBe(hash2);
-      expect(typeof hash1).toBe("number");
-    });
-
-    it("should generate different hashes for different inputs", () => {
-      const hash1 = simpleHash("string1");
-      const hash2 = simpleHash("string2");
-
-      expect(hash1).not.toBe(hash2);
-    });
-
-    it("should handle empty string", () => {
-      const hash = simpleHash("");
-      expect(hash).toBe(0);
-    });
+describe('SHA-256', () => {
+  const vectors = [
+    ['', 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'],
+    ['abc', 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'],
+    [
+      'The quick brown fox jumps over the lazy dog',
+      'd7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592',
+    ],
+  ];
+  it.each(vectors)('matches a known vector for %j', async (input, expected) => {
+    expect(await sha256(input)).toBe(expected);
+    expect(sha256Fallback(input)).toBe(expected);
   });
-
-  describe("sha256", () => {
-    it("should generate hash string", async () => {
-      const hash = await sha256("test");
-      expect(typeof hash).toBe("string");
-      expect(hash.length).toBeGreaterThan(0);
-    });
-
-    it("should generate consistent hash for same input", async () => {
-      const input = "consistent test";
-      const hash1 = await sha256(input);
-      const hash2 = await sha256(input);
-
-      expect(hash1).toBe(hash2);
-    });
+  it.each(['été 🎨 日本語', '\ud800', '\udc00', 'a'.repeat(1000000)])(
+    'matches independent Node crypto for UTF-8 and long data',
+    async (input) => {
+      const expected = createHash('sha256').update(input).digest('hex');
+      expect(await sha256(input)).toBe(expected);
+      expect(sha256Fallback(input)).toBe(expected);
+    },
+  );
+  it('keeps genuine SHA-256 when crypto and TextEncoder are absent', async () => {
+    vi.stubGlobal('crypto', undefined);
+    vi.stubGlobal('TextEncoder', undefined);
+    expect(await sha256('abc')).toBe(vectors[1][1]);
+    expect(await sha256('Aa')).not.toBe(await sha256('BB'));
+    expect(await sha256('🎨\ud800')).toBe(createHash('sha256').update('🎨\ud800').digest('hex'));
   });
-
-  describe("safeStringify", () => {
-    it("should stringify regular objects", () => {
-      const obj = { a: 1, b: "test" };
-      const result = safeStringify(obj);
-
-      expect(result).toBe('{"a":1,"b":"test"}');
-    });
-
-    it("should handle circular references", () => {
-      const obj: any = { a: 1 };
-      obj.circular = obj;
-
-      const result = safeStringify(obj);
-      expect(result).toContain("[Circular]");
-    });
-
-    it("should handle arrays", () => {
-      const arr = [1, 2, 3];
-      const result = safeStringify(arr);
-
-      expect(result).toBe("[1,2,3]");
-    });
+  it('uses SHA-256 fallback when Web Crypto rejects', async () => {
+    vi.stubGlobal('crypto', { subtle: { digest: vi.fn().mockRejectedValue(new Error('Policy')) } });
+    expect(await sha256('abc')).toBe(vectors[1][1]);
   });
+});
 
-  describe("safeGet", () => {
-    it("should return result when function succeeds", () => {
-      const result = safeGet(() => "success", "default");
-      expect(result).toBe("success");
-    });
+describe('canonical JSON', () => {
+  it('sorts keys recursively while preserving array order and changed values', () => {
+    expect(safeStringify({ b: [{ z: 2, a: 1 }], a: 0 })).toBe('{"a":0,"b":[{"a":1,"z":2}]}');
+    expect(canonicalStringify({ a: 1, b: 2 })).toBe(canonicalStringify({ b: 2, a: 1 }));
+    expect(canonicalStringify({ a: 2, b: 2 })).not.toBe(canonicalStringify({ a: 1, b: 2 }));
+    expect(canonicalStringify([1, 2])).not.toBe(canonicalStringify([2, 1]));
+  });
+  it('accepts repeated references but rejects actual cycles', () => {
+    const shared = { value: 1 };
+    expect(safeStringify({ a: shared, b: shared })).toBe(
+      safeStringify({ a: { value: 1 }, b: { value: 1 } }),
+    );
+    const circular: Record<string, unknown> = {};
+    circular.self = circular;
+    expect(() => safeStringify(circular)).toThrow('Circular');
+  });
+  it.each(
+    [
+      1n,
+      Infinity,
+      NaN,
+      new Date(),
+      new Map(),
+      undefined,
+      () => 1,
+      Symbol('x'),
+      [undefined],
+      Array(1),
+    ].map((value, index) => ({ value, index })),
+  )('rejects non-JSON case $index', ({ value }) => {
+    expect(() => safeStringify(value)).toThrow();
+  });
+  it('omits optional undefined object members without changing their siblings', () => {
+    expect(safeStringify({ a: undefined, b: null })).toBe('{"b":null}');
+  });
+  it('limits excessive nesting', () => {
+    let value: unknown = null;
+    for (let i = 0; i < 102; i++) value = { value };
+    expect(() => safeStringify(value)).toThrow('100 levels');
+  });
+});
 
-    it("should return default when function throws", () => {
-      const result = safeGet(() => {
-        throw new Error("test error");
-      }, "default");
-      expect(result).toBe("default");
-    });
-
-    it("should work with complex operations", () => {
-      const result = safeGet(() => {
-        const obj = { nested: { value: 42 } };
-        return obj.nested.value * 2;
-      }, 0);
-      expect(result).toBe(84);
-    });
+describe('comparison and compatibility helpers', () => {
+  it('reports added, removed and changed components with canonical equality', () => {
+    expect(
+      compareComponents(
+        { same: { a: 1, b: 2 }, old: true, changed: 1 },
+        { same: { b: 2, a: 1 }, added: true, changed: 2 },
+      ),
+    ).toEqual([
+      { name: 'added', type: 'added', after: true },
+      { name: 'changed', type: 'changed', before: 1, after: 2 },
+      { name: 'old', type: 'removed', before: true },
+    ]);
+  });
+  it('retains explicitly non-cryptographic and safe accessor helpers', () => {
+    expect(simpleHash('value')).toBe(simpleHash('value'));
+    expect(simpleHash('')).toBe(0);
+    expect(safeGet(() => 'yes', 'no')).toBe('yes');
+    expect(
+      safeGet(() => {
+        throw new Error('no');
+      }, 'fallback'),
+    ).toBe('fallback');
   });
 });

@@ -1,26 +1,15 @@
-# 🔐 Security Policy
+# Security policy
 
-## 📦 Supported Versions
+The v3 line is the development and maintenance target. Until 3.0.0 is published, the npm `latest` version may still be v2; check the package version rather than assuming this branch has been released. Older major versions do not receive routine fixes once v3 is released. No paid support or response-time SLA is provided.
 
-We currently support the following versions with security updates:
+## Report a vulnerability
 
-| Version | Supported |
-| ------- | ---------- |
-| 1.x     | ✅ Yes     |
-| < 1.0   | ❌ No      |
+Use [GitHub's private vulnerability reporting](https://github.com/Lorenzo-Coslado/fingerprinter-js/security/advisories/new). Include affected versions, a minimal reproduction, impact and suggested mitigation when available. Avoid personal browser observations, credentials and public exploit reports while maintainers assess the issue.
 
-If you're using an unsupported version, please consider upgrading to the latest stable release.
+This project is maintained on a best-effort basis. Maintainers will acknowledge, investigate and coordinate a fix when available; no fixed response time is promised. If the reporting channel is unavailable, contact the repository owner through their public GitHub profile without posting exploit details publicly.
 
----
+## Trust boundaries
 
-## 🛡️ Reporting a Vulnerability
+Fingerprint and automation outputs are supplied by a browser controlled by the visitor. They can be modified, omitted or replayed. They must not be used as authentication, authorization, a permanent device identity, or the sole basis for a fraud decision. The SHA-256 digest describes normalized observations; it does not authenticate those observations or guarantee their uniqueness.
 
-If you believe you've found a security vulnerability in `fingerprinter-js`, please report it **privately** using GitHub's security advisory workflow:
-
-🔗 [Report a vulnerability](https://github.com/Lorenzo-Coslado/fingerprinter-js/security/advisories/new)
-
-> Please do **not** create a public issue.
-
-We aim to respond within **72 hours** and will keep you updated throughout the investigation and resolution process.
-
-Thank you for helping keep this project secure 🙏
+Network collectors are opt-in. The default SDK does not transmit telemetry or persist a fingerprint. Review [collection effects and privacy](docs/PRIVACY.md) before deployment. Security fixes that change an identification input can affect fingerprints and will be documented in migration/release notes.

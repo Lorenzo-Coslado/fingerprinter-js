@@ -1,46 +1,22 @@
-/**
- * Hardware Collector
- * Collects hardware-related information
- */
+import type { HardwareData } from '../types';
+import { BaseCollector } from './base';
 
-import { CollectorMetadata, HardwareData } from "../types";
-import { BaseCollector } from "./base";
-
-/**
- * Hardware Collector
- * Collects CPU, memory, and device information
- */
+type HardwareNavigator = Navigator & { deviceMemory?: number; oscpu?: string };
 export class HardwareCollector extends BaseCollector<HardwareData> {
-  readonly name = "hardware";
-  readonly metadata: CollectorMetadata = BaseCollector.createMetadata(
-    "hardware",
-    {
-      weight: 8,
-      entropy: 8,
-      stable: true,
-      category: "hardware",
-    }
-  );
-
+  readonly name = 'hardware';
+  readonly metadata = BaseCollector.createMetadata(this.name, {
+    category: 'hardware',
+    stable: true,
+  });
   collect(): HardwareData {
-    return this.safeCollect<HardwareData>(
-      (): HardwareData => {
-        const nav = navigator as any;
-
-        return {
-          hardwareConcurrency: nav.hardwareConcurrency || 0,
-          deviceMemory: nav.deviceMemory || null,
-          platform: nav.platform || "unknown",
-          maxTouchPoints: nav.maxTouchPoints || 0,
-          oscpu: nav.oscpu, // Firefox only
-        };
-      },
-      {
-        hardwareConcurrency: 0,
-        deviceMemory: null,
-        platform: "unknown",
-        maxTouchPoints: 0,
-      }
-    );
+    this.requireSupported();
+    const nav = navigator as HardwareNavigator;
+    return {
+      hardwareConcurrency: nav.hardwareConcurrency || 0,
+      deviceMemory: nav.deviceMemory ?? null,
+      platform: nav.platform || 'unknown',
+      maxTouchPoints: nav.maxTouchPoints || 0,
+      ...(nav.oscpu ? { oscpu: nav.oscpu } : {}),
+    };
   }
 }

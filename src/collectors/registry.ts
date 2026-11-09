@@ -1,0 +1,271 @@
+import type {
+  CollectorDescriptor,
+  CollectorName,
+  ComponentCollector,
+  FingerprintOptions,
+  FingerprintProfile,
+} from '../types';
+import {
+  AudioCollector,
+  BatteryCollector,
+  CanvasCollector,
+  ClientHintsCollector,
+  ConnectionCollector,
+  FontsCollector,
+  HardwareCollector,
+  LanguageCollector,
+  MathCollector,
+  MediaDevicesCollector,
+  PermissionsCollector,
+  PluginsCollector,
+  ScreenCollector,
+  StorageCollector,
+  TimezoneCollector,
+  TouchCollector,
+  UserAgentCollector,
+  WebGLCollector,
+  WebRTCCollector,
+} from './index';
+
+interface Entry extends CollectorDescriptor {
+  name: CollectorName;
+  exclude: keyof FingerprintOptions;
+  create(options: FingerprintOptions): ComponentCollector;
+  project?(value: unknown): unknown;
+}
+const all: FingerprintProfile[] = ['minimal', 'balanced', 'diagnostic'];
+const normal: FingerprintProfile[] = ['balanced', 'diagnostic'];
+const diagnostic: FingerprintProfile[] = ['diagnostic'];
+const fields =
+  (names: string[]) =>
+  (value: unknown): unknown => {
+    const data = value as Record<string, unknown>;
+    return Object.fromEntries(
+      names.filter((name) => data[name] !== undefined).map((name) => [name, data[name]]),
+    );
+  };
+
+/** Schema 3 is deliberately conservative: volatile observations never enter its projection. */
+export const COLLECTOR_REGISTRY: readonly Entry[] = [
+  {
+    name: 'userAgent',
+    category: 'browser',
+    stable: false,
+    network: false,
+    description: 'User-Agent text; diagnostic only, includes browser and OS versions.',
+    profiles: normal,
+    exclude: 'excludeUserAgent',
+    create: () => new UserAgentCollector(),
+  },
+  {
+    name: 'language',
+    category: 'browser',
+    stable: true,
+    network: false,
+    description: 'Preferred languages, in preference order.',
+    profiles: all,
+    exclude: 'excludeLanguage',
+    create: () => new LanguageCollector(),
+    project: (value) => value,
+  },
+  {
+    name: 'timezone',
+    category: 'browser',
+    stable: true,
+    network: false,
+    description: 'IANA timezone; changes when the configured timezone changes.',
+    profiles: all,
+    exclude: 'excludeTimezone',
+    create: () => new TimezoneCollector(),
+    project: (value) => value,
+  },
+  {
+    name: 'screen',
+    category: 'hardware',
+    stable: true,
+    network: false,
+    description: 'Screen observation; only color depth enters the hash, never resolution or zoom.',
+    profiles: normal,
+    exclude: 'excludeScreenResolution',
+    create: () => new ScreenCollector(),
+    project: fields(['colorDepth', 'pixelDepth']),
+  },
+  {
+    name: 'plugins',
+    category: 'browser',
+    stable: false,
+    network: false,
+    description: 'Browser plugin list; diagnostic only.',
+    profiles: diagnostic,
+    exclude: 'excludePlugins',
+    create: () => new PluginsCollector(),
+  },
+  {
+    name: 'canvas',
+    category: 'graphics',
+    stable: true,
+    network: false,
+    description: 'A fixed canvas render; privacy protections or renderer changes can affect it.',
+    profiles: normal,
+    exclude: 'excludeCanvas',
+    create: () => new CanvasCollector(),
+    project: (value) => value,
+  },
+  {
+    name: 'webgl',
+    category: 'graphics',
+    stable: true,
+    network: false,
+    description: 'Graphics capabilities; no driver or graphics API version enters the hash.',
+    profiles: normal,
+    exclude: 'excludeWebGL',
+    create: () => new WebGLCollector(),
+    project: fields([
+      'vendor',
+      'renderer',
+      'unmaskedVendor',
+      'unmaskedRenderer',
+      'maxTextureSize',
+      'maxVertexAttribs',
+    ]),
+  },
+  {
+    name: 'audio',
+    category: 'audio',
+    stable: false,
+    network: false,
+    description: 'Offline audio rendering, never included in the identity hash.',
+    profiles: diagnostic,
+    exclude: 'excludeAudio',
+    create: () => new AudioCollector(),
+  },
+  {
+    name: 'fonts',
+    category: 'browser',
+    stable: true,
+    network: false,
+    description: 'Availability of a fixed system-font set; no external fonts are requested.',
+    profiles: normal,
+    exclude: 'excludeFonts',
+    create: () => new FontsCollector(),
+    project: (value) => [...(value as string[])].sort(),
+  },
+  {
+    name: 'hardware',
+    category: 'hardware',
+    stable: true,
+    network: false,
+    description: 'CPU, memory and platform capabilities; no OS version enters the hash.',
+    profiles: all,
+    exclude: 'excludeHardware',
+    create: () => new HardwareCollector(),
+    project: fields(['hardwareConcurrency', 'deviceMemory', 'platform', 'maxTouchPoints']),
+  },
+  {
+    name: 'webrtc',
+    category: 'network',
+    stable: false,
+    network: true,
+    description:
+      'ICE candidates; requires network enabled and explicit selection. No STUN server is imposed.',
+    profiles: [],
+    exclude: 'excludeWebRTC',
+    create: (options) => new WebRTCCollector({ iceServers: options.iceServers }),
+  },
+  {
+    name: 'clientHints',
+    category: 'browser',
+    stable: true,
+    network: false,
+    description: 'Client Hints; only low-entropy platform and mobile enter the hash.',
+    profiles: normal,
+    exclude: 'excludeClientHints',
+    create: (options) =>
+      new ClientHintsCollector({ highEntropy: options.profile === 'diagnostic' }),
+    project: fields(['platform', 'mobile']),
+  },
+  {
+    name: 'storage',
+    category: 'storage',
+    stable: false,
+    network: false,
+    description:
+      'Storage availability and origin quota; temporary probes preserve existing data. Diagnostic only.',
+    profiles: diagnostic,
+    exclude: 'excludeStorage',
+    create: () => new StorageCollector(),
+  },
+  {
+    name: 'battery',
+    category: 'hardware',
+    stable: false,
+    network: false,
+    description: 'Battery state where supported; diagnostic only.',
+    profiles: diagnostic,
+    exclude: 'excludeBattery',
+    create: () => new BatteryCollector(),
+  },
+  {
+    name: 'connection',
+    category: 'network',
+    stable: false,
+    network: false,
+    description: 'Network Information API; reads local browser state without a network request.',
+    profiles: diagnostic,
+    exclude: 'excludeConnection',
+    create: () => new ConnectionCollector(),
+  },
+  {
+    name: 'touch',
+    category: 'hardware',
+    stable: true,
+    network: false,
+    description: 'Touch observation; only maximum touch points enter the hash.',
+    profiles: all,
+    exclude: 'excludeTouch',
+    create: () => new TouchCollector(),
+    project: fields(['maxTouchPoints']),
+  },
+  {
+    name: 'permissions',
+    category: 'permissions',
+    stable: false,
+    network: false,
+    description: 'Permission states, queried without requesting permission; diagnostic only.',
+    profiles: diagnostic,
+    exclude: 'excludePermissions',
+    create: () => new PermissionsCollector(),
+  },
+  {
+    name: 'math',
+    category: 'hardware',
+    stable: true,
+    network: false,
+    description: 'A fixed set of math results; browser or CPU changes may affect them.',
+    profiles: all,
+    exclude: 'excludeMath',
+    create: () => new MathCollector(),
+    project: (value) => value,
+  },
+  {
+    name: 'mediaDevices',
+    category: 'hardware',
+    stable: false,
+    network: false,
+    description: 'Counts of visible media devices; permission-dependent and diagnostic only.',
+    profiles: diagnostic,
+    exclude: 'excludeMediaDevices',
+    create: () => new MediaDevicesCollector(),
+  },
+];
+
+export function getCollectorMetadata(): CollectorDescriptor[] {
+  return COLLECTOR_REGISTRY.map(({ name, category, stable, network, description, profiles }) => ({
+    name,
+    category,
+    stable,
+    network,
+    description,
+    profiles: [...profiles],
+  }));
+}
