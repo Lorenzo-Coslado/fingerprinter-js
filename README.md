@@ -1,3 +1,5 @@
+<div align="center">
+
 <p align="center">
   <img src="docs/assets/favicon.svg" alt="FingerprinterJS logo" width="80" height="80" />
 </p>
@@ -14,6 +16,8 @@
 **An open-source browser fingerprinting library for JavaScript and TypeScript.** Generate local SHA-256 fingerprints from browser signals, inspect typed collector results, and compare browser observations in your application.
 
 [Live browser fingerprint test](https://lorenzo-coslado.github.io/fingerprinter-js/) · [npm package](https://www.npmjs.com/package/fingerprinter-js) · [API reference](docs/API.md) · [Report a bug](https://github.com/Lorenzo-Coslado/fingerprinter-js/issues/new/choose)
+
+</div>
 
 > **Version compatibility:** this README documents the **v3 API and fingerprint schema 3**. The npm version badge shows the published release. Upgrading from v2 changes fingerprints and collection defaults; read the [migration guide](docs/MIGRATION.md) before upgrading. For existing v2 installations, use the [versioned v2 documentation](https://github.com/Lorenzo-Coslado/fingerprinter-js/blob/a9ba5f02ce6fad4139a32130fa367b0781493b6a/README.md).
 
