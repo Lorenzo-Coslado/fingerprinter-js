@@ -1,6 +1,8 @@
-<img src="docs/assets/favicon.svg" alt="FingerprinterJS logo" width="80" height="80" />
+<p align="center">
+  <img src="docs/assets/favicon.svg" alt="FingerprinterJS logo" width="80" height="80" />
+</p>
 
-# FingerprinterJS — Browser fingerprinting
+<h1 align="center">FingerprinterJS — Browser fingerprinting</h1>
 
 [![npm version](https://img.shields.io/npm/v/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
 [![npm downloads per month](https://img.shields.io/npm/dm/fingerprinter-js)](https://www.npmjs.com/package/fingerprinter-js)
