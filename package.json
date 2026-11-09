@@ -1,7 +1,7 @@
 {
   "name": "fingerprinter-js",
   "version": "3.0.0",
-  "description": "Local browser fingerprints and explainable collection diagnostics. Typed, versioned, and network-free by default.",
+  "description": "Open-source browser fingerprinting for JavaScript and TypeScript: local SHA-256 fingerprints, typed diagnostics, and automation signals.",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -51,7 +51,10 @@
     "docs/PRIVACY.md",
     "docs/ECOSYSTEM.md",
     "docs/RELEASING.md",
-    "docs/assets/pipeline.svg"
+    "docs/assets/pipeline.svg",
+    "docs/DEMO.md",
+    "docs/VALIDATION.md",
+    "CODE_OF_CONDUCT.md"
   ],
   "scripts": {
     "build": "node scripts/build.mjs",
@@ -75,16 +78,20 @@
     "format:check": "prettier --check . --ignore-unknown"
   },
   "keywords": [
-    "fingerprinting",
+    "browser-fingerprinting",
     "browser-fingerprint",
-    "browser-signals",
-    "device-detection",
+    "fingerprinting",
+    "javascript",
     "typescript",
+    "device-fingerprint",
+    "browser-identification",
+    "browser-signals",
     "canvas-fingerprint",
     "webgl-fingerprint",
-    "privacy",
+    "automation-detection",
+    "bot-detection",
     "diagnostics",
-    "bot-detection"
+    "privacy"
   ],
   "author": "Lorenzo Coslado",
   "license": "MIT",
