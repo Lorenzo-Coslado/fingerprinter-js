@@ -13,7 +13,7 @@
 
 [Live browser fingerprint test](https://lorenzo-coslado.github.io/fingerprinter-js/) · [npm package](https://www.npmjs.com/package/fingerprinter-js) · [API reference](docs/API.md) · [Report a bug](https://github.com/Lorenzo-Coslado/fingerprinter-js/issues/new/choose)
 
-> **Release channels:** this README documents **v3.0.0 in the repository**, and the live playground runs that source. The npm version badge shows the published release. While npm still serves v2, use the [v2 documentation](https://github.com/Lorenzo-Coslado/fingerprinter-js/blob/a9ba5f02ce6fad4139a32130fa367b0781493b6a/README.md) for that package, or [build this checkout](#try-it-and-run-the-tests) to try v3. Fingerprints change between these major versions; see [migration from v2](docs/MIGRATION.md).
+> **Version compatibility:** this README documents the **v3 API and fingerprint schema 3**. The npm version badge shows the published release. Upgrading from v2 changes fingerprints and collection defaults; read the [migration guide](docs/MIGRATION.md) before upgrading. For existing v2 installations, use the [versioned v2 documentation](https://github.com/Lorenzo-Coslado/fingerprinter-js/blob/a9ba5f02ce6fad4139a32130fa367b0781493b6a/README.md).
 
 ## Why FingerprinterJS?
 

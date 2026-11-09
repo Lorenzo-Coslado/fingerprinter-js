@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.0.0] - Unreleased
+## [3.0.0] - 2026-11-09
 
 ### Changed
 
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Preserve customData as context outside the hash; use fingerprintData for explicit identification inputs and retain UUIDs.
 - Replace unmeasured confidence/entropy claims with collectionCoverage, explicit per-collector states and quality. Legacy confidence is a deprecated coverage alias; entropy is null.
 - Make automation analysis pure, replayable and versioned; remove arbitrary locale, privacy and error-free-collection suspicion.
+- Use TypeScript 7 for type checking, declaration emission and package consumer validation, with the official compiler API compatibility package for ESLint and Rollup.
 
 ### Fixed
 
@@ -86,4 +87,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Linted with ESLint 8.49.0
 - Compatible with modern browsers and build tools
 
+[3.0.0]: https://github.com/Lorenzo-Coslado/fingerprinter-js/releases/tag/v3.0.0
 [1.0.0]: https://github.com/Lorenzo-Coslado/fingerprinter-js/releases/tag/v1.0.0

@@ -1,6 +1,6 @@
 # Releasing FingerprinterJS
 
-Release a reviewed commit whose package version, generated `src/version.ts` and changelog agree. The source checkout currently targets v3; a version in this branch is not evidence it has been published to npm.
+Release a reviewed commit whose package version, generated `src/version.ts` and changelog agree. Merging to `main` runs CI and deploys the playground; it does not publish an npm version. Publication starts when a matching GitHub release is published. Verify the npm registry after that workflow finishes.
 
 ## One-time repository setup
 
