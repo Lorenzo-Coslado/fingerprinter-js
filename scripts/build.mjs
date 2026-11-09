@@ -8,7 +8,7 @@ await rm(new URL('../dist/', import.meta.url), { recursive: true, force: true })
 await rm(new URL('../.cache/types/', import.meta.url), { recursive: true, force: true });
 execFileSync(
   process.execPath,
-  ['node_modules/typescript/bin/tsc', '--emitDeclarationOnly', '--outDir', '.cache/types'],
+  ['node_modules/@typescript/native/bin/tsc', '--emitDeclarationOnly', '--outDir', '.cache/types'],
   { stdio: 'inherit' },
 );
 const { default: configs } = await import('../rollup.config.mjs');
